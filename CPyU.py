@@ -1,10 +1,9 @@
 #!/usr/bin/python                                    
 import queue
 
-# Each position stores 2 Bytes, therefore
-# This works out to 256 Bytes
-prog_mem = queue.Queue(128)
-data_mem = queue.LifoQueue(128)
+
+prog_mem = []
+data_mem = []
 
 r0 = 0
 r1 = 0
@@ -55,7 +54,7 @@ instructions = {'01':mov, '02':add, '03':sub, '04':land,
                 '05':lor, '06':lnot, '07':xor, '08':shl,
                 '09':shr}
 
-
+# NEEDS TO BE CHANGED
 def store(val, loc):
         
         if loc == "E0":
@@ -68,7 +67,8 @@ def store(val, loc):
                 r3 = val
         else:
                 print ("Invalid location "+str(loc))
-                
+
+# NOT VALID FUNCTION ANYMORE NEEDS TO PROCESS ON REGISTERS, NOT VALUES
 def parse_value(valList):
         multiplier = [16, 1]
         bitVal = [[0,0],[0,0]]
@@ -99,7 +99,7 @@ def get_machine_code(filename):
                         break
                 instruction = line.rstrip().split(' ')
                 for instr in instruction:
-                        prog_mem.put(instr)
+                        prog_mem.append(instr)
         mc.close()
 		
 
@@ -113,16 +113,16 @@ while not prog_mem.empty():
         
         if todo == '01' or todo == '06':
                 try:
-                        val = prog_mem.get()
-                        loc = prog_mem.get()
+                        val = prog_mem.pop()
+                        loc = prog_mem.pop()
                         instructions[todo](val, loc)
                 except KeyError:
                         print("Instruction "+str(todo)+"not found!")
         else:
                 try:
-                        val1 = prog_mem.get()
-                        val2 = prog_mem.get()
-                        loc = prog_mem.get()
+                        val1 = prog_mem.pop()
+                        val2 = prog_mem.pop()
+                        loc = prog_mem.pop()
                         instructions[todo](val1, val2, loc)
                 except KeyError:
                         print("Instruction "+str(todo)+"not found!")
