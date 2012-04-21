@@ -1,6 +1,4 @@
 #!/usr/bin/python                                    
-import queue
-
 
 prog_mem = []
 data_mem = []
@@ -12,82 +10,72 @@ r3 = 0
 
 hexLookup = {'A':10,'B':11,'C':12,'D':13,'E':14,'F':15}
 
+def cpy_swp():
+        pass
 
-def mov(val, loc):
-        new_val = parse_value([val])[0]
-        store(new_val, loc)   
+def ld():
+        pass
 
-def add(val1, val2, loc):
-        [new_val1, new_val2] = parse_value([val1, val2])
-        store(new_val1+new_val2, loc)
+def in_out():
+        pass
 
-def sub(val1, val2, loc):
-        [new_val1, new_val2] = parse_value([val1, val2])
-        store(new_val1-new_val2, loc)
+def add():
+        pass
 
-def land(val1, val2, loc):
-        [new_val1, new_val2] = parse_value([val1, val2])
-        store(new_val1&new_val2, loc)
+def sub():
+        pass
 
-def lor(val1, val2, loc):
-        [new_val1, new_val2] = parse_value([val1, val2])
-        store(new_val1|new_val2, loc)
+def and_op():
+        pass
 
-def lnot(val, loc):
-        new_val = parse_value([val])[0]
-        store(~new_val, loc)    
+def ret():
+        pass
 
-def xor(val1, val2, loc):
-        [new_val1, new_val2] = parse_value([val1, val2])
-        store(new_val1^new_val2, loc)
+def clt():
+        pass
 
-def shl(val1, val2, loc):
-        [new_val1, new_val2] = parse_value([val1, val2])
-        store(new_val1<<new_val2, loc)
+def shift():
+        pass
 
-def shr(val1, val2, loc):
-        [new_val1, new_val2] = parse_value([val1, val2])
-        store(new_val1>>new_val2, loc)
+def not_op():
+        pass
 
-        
-instructions = {'01':mov, '02':add, '03':sub, '04':land,
-                '05':lor, '06':lnot, '07':xor, '08':shl,
-                '09':shr}
+def ceq():
+        pass
 
-# NEEDS TO BE CHANGED
-def store(val, loc):
-        
-        if loc == "E0":
-                r0 = val
-        elif loc == "E8":
-                r1 = val
-        elif loc == "F0":
-                r2 = val
-        elif loc == "F8":
-                r3 = val
-        else:
-                print ("Invalid location "+str(loc))
+def jump_call_br():
+        pass
 
-# NOT VALID FUNCTION ANYMORE NEEDS TO PROCESS ON REGISTERS, NOT VALUES
-def parse_value(valList):
-        multiplier = [16, 1]
-        bitVal = [[0,0],[0,0]]
-        
-        for i in range(0, len(valList)):
-                temp = list(valList[i])
-                
-                try:
-                        bitVal[i][0] = int(hexLookup[temp[0]])*16
-                except KeyError:
-                        bitVal[i][0] = int(temp[0])*16
-                try:
-                        bitVal[i][1] = int(hexLookup[temp[1]])
-                except KeyError:
-                        bitVal[i][1] = int(temp[1])
+def mul():
+        pass
 
-        val1 = bitVal[0][0] + bitVal[0][1]
-        val2 = bitVal[1][0] + bitVal[1][1]
-        return [val1, val2]
+def div():
+        pass
+
+def reti():
+        pass
+
+def nop():
+        pass
+
+
+'''
+Get Instructions
+'''
+def get_instructions():
+        instr = prog_mem.pop()
+        try:
+                instr_high = hexLookup[instr[0]]*16
+        except KeyError:
+                instr_high = instr[0]
+        try:
+                instr_low = hexLookup[instr[1]]
+        except KeyError:
+                instr_low = instr[1]
+
+        return intr_high|instr_low
+
+
 '''
 Parse machine code and store in program memory
 '''
@@ -103,28 +91,18 @@ def get_machine_code(filename):
         mc.close()
 		
 
+opcode = {1:cpy_swp, 2:ld, 3:in_out, 4:add, 5:sub,
+          6:and_op, 7:ret, 8:clt, 9:shift, 10:not_op,
+          11:ceq, 12:jump_call_br, 13:mul, 14:div,
+          15:reti, 0:nop}
+
+
 '''
 Main code
 '''
 get_machine_code('machine.a')
 
 while not prog_mem.empty():
-        todo = prog_mem.get()
-        
-        if todo == '01' or todo == '06':
-                try:
-                        val = prog_mem.pop()
-                        loc = prog_mem.pop()
-                        instructions[todo](val, loc)
-                except KeyError:
-                        print("Instruction "+str(todo)+"not found!")
-        else:
-                try:
-                        val1 = prog_mem.pop()
-                        val2 = prog_mem.pop()
-                        loc = prog_mem.pop()
-                        instructions[todo](val1, val2, loc)
-                except KeyError:
-                        print("Instruction "+str(todo)+"not found!")
+        todo = get_instrustions()
 
                         
