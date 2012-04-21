@@ -102,7 +102,7 @@ Main code
 '''
 get_machine_code('machine.a')
 
-while not prog_mem.empty():
+while prog_mem:
         todo = get_instrustions()
 
                         
