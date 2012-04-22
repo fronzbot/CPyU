@@ -1,4 +1,4 @@
-#!/usr/bin/python                                    
+#!/usr/bin/env python                                    
 
 prog_mem = []
 data_mem = []
@@ -12,90 +12,90 @@ hexLookup = {'0':0, '1':1, '2':2, '3':3, '4':4,
              'A':10,'B':11,'C':12,'D':13,'E':14,'F':15}
 
 def cpy():
-        pass
+    pass
 
 def swp():
-        pass
+    pass
 
 def ld(reg):
-        val = get_byte()
-        if reg & 0x3:
-                pass
-        else:
-             reg = (reg & 0xC)>>2
-             r[reg] = val       
+    val = get_byte()
+    if reg & 0x3:
+        pass
+    else:
+        reg = (reg & 0xC)>>2
+        r[reg] = val       
 
 def in_out():
-        pass
+    pass
 
 def add(reg):
-        reg2 = reg & 0x3
-        reg1 = (reg & 0xC)>>2
-        r[reg1] = r[reg1]+r[reg2]
+    reg2 = reg & 0x3
+    reg1 = (reg & 0xC)>>2
+    r[reg1] = r[reg1]+r[reg2]
         
 def sub(reg):
-        reg2 = reg & 0x3
-        reg1 = (reg & 0xC)>>2
-        r[reg1] = r[reg1]-r[reg2]
+    reg2 = reg & 0x3
+    reg1 = (reg & 0xC)>>2
+    r[reg1] = r[reg1]-r[reg2]
 
 def and_op(reg):
-        reg2 = reg & 0x3
-        reg1 = (reg & 0xC)>>2
-        r[reg1] = r[reg1]&r[reg2]
+    reg2 = reg & 0x3
+    reg1 = (reg & 0xC)>>2
+    r[reg1] = r[reg1]&r[reg2]
 
 def ret():
-        pass
+    pass
 
 def clt():
-        pass
+    pass
 
 def shift():
-        pass
+    pass
 
 def not_op():
-        pass
+    pass
 
 def ceq():
-        pass
+    pass
 
 def jump_call_br():
-        pass
+    pass
 
 def mul():
-        pass
+    pass
 
 def div():
-        pass
+    pass
 
 def nop():
-        pass
+    pass
 
 
 '''
 Get Instructions
 '''
 def get_byte():
-        instr = prog_mem.pop()
-        instr_high = hexLookup[instr[0]]*16
-        instr_low = hexLookup[instr[1]]
+    instr = prog_mem.pop()
+    instr_high = hexLookup[instr[0]]*16
+    instr_low = hexLookup[instr[1]]
         
-        return instr_high|instr_low
+    return instr_high|instr_low
 
 
 '''
 Parse machine code and store in program memory
 '''
 def get_machine_code(filename):
-        mc = open(filename, 'r')
-        while True:
-                line = mc.readline()
-                if not line:
-                        break
-                instruction = line.rstrip().split(' ')
-                for instr in instruction:
-                        prog_mem.append(instr)
-        mc.close()
-        prog_mem.reverse()
+    mc = open(filename, 'r')
+    while True:
+        line = mc.readline()
+        if not line:
+            break
+        instruction = line.rstrip().split(' ')
+        for instr in instruction:
+            prog_mem.append(instr)
+    mc.close()
+    prog_mem.reverse()
 		
 
 opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
@@ -109,8 +109,8 @@ Main code
 '''
 get_machine_code('machine.a')
 while prog_mem:
-        todo = get_byte()
-        opcode[todo>>4](todo)
+    todo = get_byte()
+    opcode[todo>>4](todo)
 
 print("R0 is "+str(hex(r[0])))
 print("R1 is "+str(hex(r[1])))
