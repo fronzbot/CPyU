@@ -19,8 +19,19 @@ def swp():
 
 def ld(reg):
     val = get_byte()
+    # Store
     if reg & 0x3:
-        pass
+        reg = (reg & 0xC)>>2
+        displace = (val & 0xC0)>>2 + (val & 0x3F)
+        prog_mem[displace] = r[reg]
+    
+    # Load Displacement
+    elif reg & 0x2:
+        reg = (reg & 0xC)>>2
+        displace = (val & 0xC0)>>2 + (val & 0x3F)
+        r[reg] = prog_mem[displace]
+                
+    # Load Immediate
     else:
         reg = (reg & 0xC)>>2
         r[reg] = val       
@@ -96,6 +107,13 @@ def get_machine_code(filename):
             prog_mem.append(instr)
     mc.close()
     prog_mem.reverse()
+    if len(prog_mem) > 256:
+        print("Error: program memory exceeded!")
+        exit(1)
+        
+    for i in range(len(prog_mem), 256):
+        prog_mem.append(0)
+        
 		
 
 opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
