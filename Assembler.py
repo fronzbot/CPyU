@@ -25,7 +25,7 @@ def ld(line):
     instr = line.pop(0)
     gotReg = False
     for byte in line:
-        byte = re.sub('\,', '', byte);
+        byte = re.sub('\,', '', byte)
 
         if (not gotReg) and byte :
             try:
@@ -42,8 +42,10 @@ def ld(line):
                 print("Line: "+str(lineNum)+" value "+byte+" must be hex!")
                 exit(1)
 
-
-    word = str(2)+str(hex(reg<<2)[2:]).capitalize()+" "+str(val)
+    hexVal = str(val)
+    if len(hexVal) < 2:
+        hexVal = "0"+hexVal
+    word = str(2)+str(hex(reg<<2)[2:]).capitalize()+" "+hexVal
         
     f = open(mcFile, 'a')
     f.write(word+"\n")
@@ -54,13 +56,64 @@ def in_out():
     pass
 
 def add(line):
-    pass
+    instr = line.pop(0)
+    regs = []
+    for byte in line:
+        byte = re.sub('\,','',byte)
+        byte = re.sub(';',' ', byte)
+        if len(regs) == 2:
+            break
+        try:
+            regs.append(regLookup[byte])
+        except KeyError:
+            print("Line: "+str(lineNum)+" unkown register "+byte)
+            exit(1)
+
+    word = str(4)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
         
 def sub(line):
-    pass
+    instr = line.pop(0)
+    regs = []
+    for byte in line:
+        byte = re.sub('\,','',byte)
+        byte = re.sub(';',' ', byte)
+        if len(regs) == 2:
+            break
+        try:
+            regs.append(regLookup[byte])
+        except KeyError:
+            print("Line: "+str(lineNum)+" unkown register "+byte)
+            exit(1)
+
+    word = str(5)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
 
 def and_op(line):
-    pass
+    instr = line.pop(0)
+    regs = []
+    for byte in line:
+        byte = re.sub('\,','',byte)
+        byte = re.sub(';',' ', byte)
+        if len(regs) == 2:
+            break
+        try:
+            regs.append(regLookup[byte])
+        except KeyError:
+            print("Line: "+str(lineNum)+" unkown register "+byte)
+            exit(1)
+
+    word = str(6)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
 
 def ret():
     pass
