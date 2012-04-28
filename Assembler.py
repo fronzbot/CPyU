@@ -25,21 +25,23 @@ def ld(line):
     instr = line.pop(0)
     gotReg = False
     for byte in line:
-        byte = re.sub('\,', '', byte)
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
 
         if (not gotReg) and byte :
             try:
                 reg = regLookup[byte]
                 gotReg = True
             except KeyError:
-                print("Line: "+str(lineNum)+" unkown register "+byte)
+                print("Line "+str(lineNum)+": unkown register "+byte)
                 exit(1)
         elif byte:
             try:
                 val = byte[2:]
                 break
             except IndexError:
-                print("Line: "+str(lineNum)+" value "+byte+" must be hex!")
+                print("Line "+str(lineNum)+": value "+byte+" must be hex!")
                 exit(1)
 
     hexVal = str(val)
@@ -59,14 +61,15 @@ def add(line):
     instr = line.pop(0)
     regs = []
     for byte in line:
-        byte = re.sub('\,','',byte)
-        byte = re.sub(';',' ', byte)
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
         if len(regs) == 2:
             break
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line: "+str(lineNum)+" unkown register "+byte)
+            print("Line "+str(lineNum)+": unkown register "+byte)
             exit(1)
 
     word = str(4)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
@@ -79,14 +82,16 @@ def sub(line):
     instr = line.pop(0)
     regs = []
     for byte in line:
-        byte = re.sub('\,','',byte)
-        byte = re.sub(';',' ', byte)
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
         if len(regs) == 2:
             break
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line: "+str(lineNum)+" unkown register "+byte)
+            print(len(byte))
+            print("Line "+str(lineNum)+": unkown register "+byte)
             exit(1)
 
     word = str(5)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
@@ -99,14 +104,15 @@ def and_op(line):
     instr = line.pop(0)
     regs = []
     for byte in line:
-        byte = re.sub('\,','',byte)
-        byte = re.sub(';',' ', byte)
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
         if len(regs) == 2:
             break
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line: "+str(lineNum)+" unkown register "+byte)
+            print("Line "+str(lineNum)+": unkown register "+byte)
             exit(1)
 
     word = str(6)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
