@@ -1,4 +1,5 @@
 #!/usr/bin/env python                                    
+import pipeline
 
 prog_mem = []
 data_mem = []
@@ -17,45 +18,39 @@ def cpy():
 def swp():
     pass
 
-def ld(opts):
-    # opts = [register, selection, value]
-    reg = opts[0]
-    sel = opts[1]
-    val = opts[2]
+def ld(pipe):
     # Store
-    if sel == 0x3:
-        displace = (val & 0xC0)>>2 + (val & 0x3F)
-        prog_mem[displace] = r[reg]
+    if pipe.select == 0x3:
+        displace = (pipe.val_reg & 0xC0)>>2 + (pipe.val_reg & 0x3F)
+        #prog_mem[displace] = r[reg]
     
     # Load Displacement
-    elif sel == 0x2:
-        displace = (val & 0xC0)>>2 + (val & 0x3F)
-        r[reg] = prog_mem[displace]
+    elif pipe.select == 0x2:
+        displace = (pipe.val_reg & 0xC0)>>2 + (pipe.val_reg & 0x3F)
+        #r[reg] = prog_mem[displace]
                 
     # Load Immediate
     else:
-        r[reg] = val
+        r[pipe.dst_reg] = pipe.val_reg
+        pipe.stageName = "END"
 
 def in_out():
     pass
 
-def add(opts):
-    # opts = [dest register, src register]
-    dst = opts[0]
-    src = opts[1]
-    r[dst] = r[dst] + r[src]
+def add(pipe):
+    pipe.currStage += 1
+    pipe.stageName = "ALU"
+    pipe.alu_reg = r[pipe.dst_reg] + r[pipe.src_reg]
         
-def sub(opts):
-    # opts = [dest register, src register]
-    dst = opts[0]
-    src = opts[1]
-    r[dst] = r[dst] - r[src]
+def sub(pipe):
+    pipe.currStage += 1
+    pipe.stageName = "ALU"
+    pipe.alu_reg = r[pipe.dst_reg] - r[pipe.src_reg]
 
-def and_op(opts):
-    # opts = [dest register, src register]
-    dst = opts[0]
-    src = opts[1]
-    r[dst] = r[dst] & r[src]
+def and_op(pipe):
+    pipe.currStage += 1
+    pipe.stageName = "ALU"
+    pipe.alu_reg = r[pipe.dst_reg] & r[pipe.src_reg]
 
 def ret():
     pass
@@ -90,15 +85,21 @@ opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
           11:ceq, 12:jump_call_br, 13:mul, 14:div,
           15:nop}
 
+
+def write_to_reg(pipe):
+    pipe.currStage += 1
+    pipe.stageName = "WB"
+    r[pipe.dst_reg] = pipe.alu_reg
+
 '''
 Instruction Fetch
 '''
-def instr_fetch():
-    return get_byte(prog_mem.pop())
+#def instr_fetch():
+#    return get_byte(prog_mem.pop())
 
 '''
 Register Fetch
-'''
+
 def reg_fetch(byte):
     instr = byte >> 4
     # ld immediate, ld displacement, st; in, out
@@ -131,17 +132,17 @@ def reg_fetch(byte):
         reg_list = [dest, src]
 
     return reg_list
-        
+'''        
 
 '''
 Convert string to numeric
-'''
+
 def get_byte(val):
     instr_high = hexLookup[val[0]]<<4
     instr_low = hexLookup[val[1]]
         
     return instr_high|instr_low
-
+'''
 
 '''
 Parse machine code and store in program memory
@@ -169,13 +170,16 @@ def get_machine_code(filename):
 '''
 Main code
 '''
+pipeOne = pipeline.Pipeline()
 get_machine_code('out.a')
 while prog_mem:
     if prog_mem[-1] == "00":
         break
-    todo = instr_fetch()
-    opts = reg_fetch(todo)
-    opcode[todo>>4](opts)
+    prog_mem = pipeOne.instr_fetch(prog_mem)
+    prog_mem = pipeOne.reg_fetch(prog_mem)
+    opcode[pipeOne.instr >> 4](pipeOne)
+    if(pipeOne.stageName != "END"):
+        write_to_reg(pipeOne)
 
 print("R0 is "+str(hex(r[0])))
 print("R1 is "+str(hex(r[1])))
