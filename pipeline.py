@@ -23,6 +23,8 @@ class Pipeline(object):
         self.currStage += 1
         self.stageName = "IF"
         self.instr = self.get_byte(mem.pop())
+        if self.instr == 0x0:
+            self.stageName = "DONE"
         return mem
 
     def reg_fetch(self, mem):

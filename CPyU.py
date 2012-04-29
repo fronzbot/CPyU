@@ -1,6 +1,6 @@
 #!/usr/bin/env python                                    
 import pipeline
-
+import time
 prog_mem = []
 data_mem = []
 
@@ -33,6 +33,8 @@ def ld(pipe):
     else:
         r[pipe.dst_reg] = pipe.val_reg
         pipe.stageName = "END"
+        if prog_mem[-1] == "00":
+            pipe.stageName = "DONE"
 
 def in_out():
     pass
@@ -90,59 +92,8 @@ def write_to_reg(pipe):
     pipe.currStage += 1
     pipe.stageName = "WB"
     r[pipe.dst_reg] = pipe.alu_reg
-
-'''
-Instruction Fetch
-'''
-#def instr_fetch():
-#    return get_byte(prog_mem.pop())
-
-'''
-Register Fetch
-
-def reg_fetch(byte):
-    instr = byte >> 4
-    # ld immediate, ld displacement, st; in, out
-    if instr == 0x2 or instr == 0x3:
-        nextWord = get_byte(prog_mem.pop())
-        reg = (byte & 0xC) >> 2
-        selection = (byte & 0x3)
-        reg_list = [reg, selection, nextWord]
-
-    # jmp, br, call
-    elif instr == 0xC:
-        pass
-    
-    # shla, shll, shra, shrl
-    elif instr == 0x9:
-        reg = (byte & 0xC) >> 2
-        selection = (byte & 0x3)
-        reg_list = [reg, selection]
-
-    # ret, reti
-    elif instr == 0x7:
-        reg = (byte & 0x3)
-        selection = (byte & 0xC) >> 2
-        reg_list = [reg, selection]
-
-    # everything else
-    else:
-        dest = (byte & 0xC) >> 2
-        src  = (byte & 0x3)
-        reg_list = [dest, src]
-
-    return reg_list
-'''        
-
-'''
-Convert string to numeric
-
-def get_byte(val):
-    instr_high = hexLookup[val[0]]<<4
-    instr_low = hexLookup[val[1]]
-        
-    return instr_high|instr_low
-'''
+    if prog_mem[-1] == "00":
+            pipe.stageName = "DONE"
 
 '''
 Parse machine code and store in program memory
@@ -171,15 +122,62 @@ def get_machine_code(filename):
 Main code
 '''
 pipeOne = pipeline.Pipeline()
+pipeTwo = pipeline.Pipeline()
 get_machine_code('out.a')
 while prog_mem:
     if prog_mem[-1] == "00":
-        break
-    prog_mem = pipeOne.instr_fetch(prog_mem)
-    prog_mem = pipeOne.reg_fetch(prog_mem)
-    opcode[pipeOne.instr >> 4](pipeOne)
-    if(pipeOne.stageName != "END"):
-        write_to_reg(pipeOne)
+        if pipeOne.stageName == "DONE" and pipeTwo.stageName == "DONE":
+            break
+
+
+    print("Pipe One\n---------")
+    print("\t"+str(hex(pipeOne.instr)))
+    print("\t"+str(pipeOne.stageName)+", "+str(pipeOne.currStage))
+    print("\n")
+    print("Pipe Two\n---------")
+    print("\t"+str(hex(pipeTwo.instr)))
+
+    print("\t"+str(pipeTwo.stageName)+", "+str(pipeTwo.currStage))
+    time.sleep(0.5)
+    if pipeOne.currStage <= pipeTwo.currStage and pipeOne.stageName != "DONE":
+        if pipeTwo.stageName == "DONE":
+            pipeTwo.currStage += 1
+        if (pipeOne.stageName == "" or pipeOne.stageName == "WB" or pipeOne.stageName == "END") and pipeTwo.stageName != "IF":
+            prog_mem = pipeOne.instr_fetch(prog_mem)
+            if pipeTwo.stageName == "":
+                pipeTwo.currStage += 1
+        elif pipeOne.stageName == "IF" and pipeTwo.stageName != "RF":
+            prog_mem = pipeOne.reg_fetch(prog_mem)
+        elif pipeOne.stageName == "RF" and pipeTwo.stageName != "ALU":
+            opcode[pipeOne.instr >> 4](pipeOne)
+        elif pipeOne.stageName == "ALU" and pipeTwo.stageName != "END" and pipeTwo.stageName != "WB":
+            write_to_reg(pipeOne)
+            if prog_mem[-1] == "00":
+                pipeOne.stageName = "DONE"
+        elif (pipeTwo.stageName == "" or pipeTwo.stageName == "WB" or pipeTwo.stageName == "END") and pipeOne.stageName != "IF":
+            prog_mem = pipeTwo.instr_fetch(prog_mem)
+        elif pipeTwo.stageName == "IF" and pipeOne.stageName != "RF":
+            prog_mem = pipeTwo.reg_fetch(prog_mem)
+        elif pipeTwo.stageName == "RF" and pipeOne.stageName != "ALU":
+            opcode[pipeTwo.instr >> 4](pipeTwo)
+        elif pipeTwo.stageName == "ALU" and pipeOne.stageName != "END" and pipeOne.stageName != "WB":
+            write_to_reg(pipeTwo)
+            if prog_mem[-1] == "00":
+                pipeTwo.stageName = "DONE"
+    elif pipeTwo.currStage <= pipeOne.currStage and pipeTwo.stageName != "DONE":
+        if pipeOne.stageName == "DONE":
+            pipeOne.currStage += 1
+        if (pipeTwo.stageName == "" or pipeTwo.stageName == "WB" or pipeTwo.stageName == "END") and pipeOne.stageName != "IF":
+            prog_mem = pipeTwo.instr_fetch(prog_mem)
+        elif pipeTwo.stageName == "IF" and pipeOne.stageName != "RF":
+            prog_mem = pipeTwo.reg_fetch(prog_mem)
+        elif pipeTwo.stageName == "RF" and pipeOne.stageName != "ALU":
+            opcode[pipeTwo.instr >> 4](pipeTwo)
+        elif pipeTwo.stageName == "ALU" and pipeOne.stageName != "END" and pipeOne.stageName != "WB":
+            write_to_reg(pipeTwo)
+            if prog_mem[-1] == "00":
+                pipeTwo.stageName = "DONE"
+
 
 print("R0 is "+str(hex(r[0])))
 print("R1 is "+str(hex(r[1])))
