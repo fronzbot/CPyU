@@ -123,6 +123,7 @@ Main code
 '''
 pipeOne     = pipeline.Pipeline()
 pipeTwo     = pipeline.Pipeline()
+pipeTwo.currStage = 1
 pipeCheck   = pipeline.Controller()
 pipeCheck.pipes = [pipeOne, pipeTwo]
 get_machine_code('out.a')
@@ -142,6 +143,50 @@ while prog_mem:
     print("\t"+str(pipeTwo.stageName)+", "+str(pipeTwo.currStage))
     time.sleep(1)
     
+    
+    #pipeNum = 0
+    #prevPipe = False
+    #for currPipe in pipeCheck.pipes:    
+    #    [prog_mem, r] = pipeline.pipe_data(currPipe, pipeCheck, prog_mem, r, pipeNum)
+    #    pipeNum += 1
+    
+    if pipeCheck.stage_pos(pipeOne):
+        if (pipeCheck.clear_for_stage(pipeOne, "IF") or pipeOne.stageName == "") and pipeCheck.next_stage("IF"):
+            pipeCheck.ifClocked = True
+            pipeCheck.wbClocked = False
+            prog_mem = pipeOne.instr_fetch(prog_mem)
+        elif pipeCheck.clear_for_stage(pipeOne, "RF") and pipeCheck.next_stage("RF"):
+            pipeCheck.rfClocked = True
+            pipeCheck.ifClocked = False
+            prog_mem = pipeOne.reg_fetch(prog_mem)
+        elif pipeCheck.clear_for_stage(pipeOne, "ALU") and pipeCheck.next_stage("ALU"):
+            pipeCheck.aluClocked = True
+            pipeCheck.rfClocked = False
+            opcode[pipeOne.instr >> 4](pipeOne)
+        elif pipeCheck.clear_for_stage(pipeOne, "WB") and pipeCheck.next_stage("WB"):
+            pipeCheck.wbClocked = True
+            pipeCheck.aluClocked = False
+            write_to_reg(pipeOne)
+            
+    elif pipeCheck.stage_pos(pipeTwo):
+        if (pipeCheck.clear_for_stage(pipeTwo, "IF") or pipeTwo.stageName == "") and pipeCheck.next_stage("IF"):
+            pipeCheck.ifClocked = True
+            pipeCheck.wbClocked = False
+            prog_mem = pipeTwo.instr_fetch(prog_mem)
+        elif pipeCheck.clear_for_stage(pipeTwo, "RF") and pipeCheck.next_stage("RF"):
+            pipeCheck.rfClocked = True
+            pipeCheck.ifClocked = False
+            prog_mem = pipeTwo.reg_fetch(prog_mem)
+        elif pipeCheck.clear_for_stage(pipeTwo, "ALU") and pipeCheck.next_stage("ALU"):
+            pipeCheck.aluClocked = True
+            pipeCheck.rfClocked = False
+            opcode[pipeTwo.instr >> 4](pipeTwo)
+        elif pipeCheck.clear_for_stage(pipeTwo, "WB") and pipeCheck.next_stage("WB"):
+            pipeCheck.wbClocked = True
+            pipeCheck.aluClocked = False
+            write_to_reg(pipeTwo)
+        
+'''
     if pipeCheck.stage_pos(pipeOne):
         if pipeTwo.stageName == "DONE":
             pipeTwo.currStage += 1
@@ -175,10 +220,10 @@ while prog_mem:
             opcode[pipeTwo.instr >> 4](pipeTwo)
         elif pipeCheck.clear_for_stage(pipeTwo, "WB"):
             write_to_reg(pipeTwo)
-
+'''
     
     
-    '''
+'''
     if pipeOne.currStage <= pipeTwo.currStage and pipeOne.stageName != "DONE":
         if pipeTwo.stageName == "DONE":
             pipeTwo.currStage += 1
