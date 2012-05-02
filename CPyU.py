@@ -40,17 +40,17 @@ def in_out():
     pass
 
 def add(pipe):
-    pipe.currStage += 1
+    pipe.clockCycle += 1
     pipe.stageName = "ALU"
     pipe.alu_reg = r[pipe.dst_reg] + r[pipe.src_reg]
         
 def sub(pipe):
-    pipe.currStage += 1
+    pipe.clockCycle += 1
     pipe.stageName = "ALU"
     pipe.alu_reg = r[pipe.dst_reg] - r[pipe.src_reg]
 
 def and_op(pipe):
-    pipe.currStage += 1
+    pipe.clockCycle += 1
     pipe.stageName = "ALU"
     pipe.alu_reg = r[pipe.dst_reg] & r[pipe.src_reg]
 
@@ -89,7 +89,7 @@ opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
 
 
 def write_to_reg(pipe):
-    pipe.currStage += 1
+    pipe.clockCycle += 1
     pipe.stageName = "WB"
     r[pipe.dst_reg] = pipe.alu_reg
     if prog_mem[-1] == "00":
@@ -117,39 +117,8 @@ def get_machine_code(filename):
 
     prog_mem.reverse()
         
-def do_pipeTwo(mem):
-    
-    if pipeCheck.clear_for_stage(pipeTwo, "IF") or pipeTwo.stageName == "":
-        mem = pipeTwo.instr_fetch(mem)
-    elif pipeCheck.clear_for_stage(pipeTwo, "RF"):
-        mem = pipeTwo.reg_fetch(mem)
-    elif pipeCheck.clear_for_stage(pipeTwo, "ALU"):
-        opcode[pipeTwo.instr >> 4](pipeTwo)
-    elif pipeCheck.clear_for_stage(pipeTwo, "WB"):
-        write_to_reg(pipeTwo)
-    
-    elif pipeCheck.clear_for_stage(pipeThree, "IF") or pipeThree.stageName == "":
-        mem = pipeThree.instr_fetch(mem)
-    elif pipeCheck.clear_for_stage(pipeThree, "RF"):
-        mem = pipeThree.reg_fetch(mem)
-    elif pipeCheck.clear_for_stage(pipeThree, "ALU"):
-        opcode[pipeThree.instr >> 4](pipeThree)
-    elif pipeCheck.clear_for_stage(pipeThree, "WB"):
-        write_to_reg(pipeThree)
-    return mem
 
-def do_pipeThree(mem):
-    if pipeThree.stageName == "DONE":
-        pipeThree.currStage += 1
-    if pipeCheck.clear_for_stage(pipeThree, "IF") or pipeThree.stageName == "":
-        mem = pipeThree.instr_fetch(mem)
-    elif pipeCheck.clear_for_stage(pipeThree, "RF"):
-        mem = pipeThree.reg_fetch(mem)
-    elif pipeCheck.clear_for_stage(pipeThree, "ALU"):
-        opcode[pipeThree.instr >> 4](pipeThree)
-    elif pipeCheck.clear_for_stage(pipeThree, "WB"):
-        write_to_reg(pipeThree)
-    return mem
+
 
 '''
 Main code
@@ -157,61 +126,83 @@ Main code
 pipeOne     = pipeline.Pipeline()
 pipeTwo     = pipeline.Pipeline()
 pipeThree   = pipeline.Pipeline()
-pipeTwo.currStage = 1
-pipeThree.currStage = 1
-pipeCheck   = pipeline.Controller()
-pipeCheck.pipes = [pipeOne, pipeTwo, pipeThree]
+pipeFour    = pipeline.Pipeline()
+pipeFive    = pipeline.Pipeline()
+
+pipeTwo.clockCycle      = 1
+pipeThree.clockCycle    = 1
+pipeFour.clockCycle     = 1
+pipeFive.clockCycle     = 1
+
+
+check   = pipeline.Controller()
+check.pipes = [pipeOne, pipeTwo, pipeThree, pipeFour, pipeFive]
 get_machine_code('out.a')
+check.IFQueue.append(pipeOne)
+check.IFQueue.append(pipeTwo)
+check.IFQueue.append(pipeThree)
+check.IFQueue.append(pipeFour)
+check.IFQueue.append(pipeFive)
 while prog_mem:
     if prog_mem[-1] == "00":
-        if pipeOne.stageName == "DONE" and pipeTwo.stageName == "DONE" and pipeThree.stageName == "DONE":
+        if pipeOne.stageName == "DONE" and pipeTwo.stageName == "DONE" and pipeThree.stageName == "DONE" and pipeFour.stageName == "DONE"  and pipeFive.stageName == "DONE":
             break
 
 
     print("Pipe One\n---------")
     print("\t"+str(hex(pipeOne.instr)))
-    print("\t"+str(pipeOne.stageName)+", "+str(pipeOne.currStage))
+    print("\t"+str(pipeOne.stageName)+", "+str(pipeOne.clockCycle))
     print("\n")
     print("Pipe Two\n---------")
     print("\t"+str(hex(pipeTwo.instr)))
-    print("\t"+str(pipeTwo.stageName)+", "+str(pipeTwo.currStage))
+    print("\t"+str(pipeTwo.stageName)+", "+str(pipeTwo.clockCycle))
     print("\n")
     print("Pipe Three\n---------")
     print("\t"+str(hex(pipeThree.instr)))
-    print("\t"+str(pipeThree.stageName)+", "+str(pipeThree.currStage))
-    
-    time.sleep(1)
-    
-    if pipeOne.stageName == "DONE":
-        pipeOne.currStage += 1
-    if pipeTwo.stageName == "DONE":
-        pipeTwo.currStage += 1
-    if pipeThree.stageName == "DONE":
-        pipeThree.currStage += 1
-    
-    if pipeCheck.stage_pos(pipeOne):
-        
-        if pipeCheck.clear_for_stage(pipeOne, "IF") or pipeOne.stageName == "":
-            prog_mem = pipeOne.instr_fetch(prog_mem)
-            if pipeTwo.stageName == "":
-                pipeTwo.currStage += 1
-            if pipeThree.stageName == "":
-                pipeThree.currStage += 1
-        elif pipeCheck.clear_for_stage(pipeOne, "RF"):
-            prog_mem = pipeOne.reg_fetch(prog_mem)
-        elif pipeCheck.clear_for_stage(pipeOne, "ALU"):
-            opcode[pipeOne.instr >> 4](pipeOne)
-        elif pipeCheck.clear_for_stage(pipeOne, "WB"):
-            write_to_reg(pipeOne)
-        else:
-            prog_mem = do_pipeTwo(prog_mem)
+    print("\t"+str(pipeThree.stageName)+", "+str(pipeThree.clockCycle))
+    print("\n")
+    print("Pipe Four\n---------")
+    print("\t"+str(hex(pipeFour.instr)))
+    print("\t"+str(pipeFour.stageName)+", "+str(pipeFour.clockCycle))
+    print("\n")
+    print("Pipe Five\n---------")
+    print("\t"+str(hex(pipeFive.instr)))
+    print("\t"+str(pipeFive.stageName)+", "+str(pipeFive.clockCycle))
+    print("\n")
 
-    elif pipeCheck.stage_pos(pipeTwo):
-        prog_mem = do_pipeTwo(prog_mem)
-        
-    elif pipeCheck.stage_pos(pipeThree):
-        prog_mem = do_pipeThree(prog_mem)
-    
+    if pipeOne.stageName == "DONE":
+        check.clear_pipe(pipeOne)
+    if pipeTwo.stageName == "DONE":
+        check.clear_pipe(pipeTwo)
+    if pipeThree.stageName == "DONE":
+        check.clear_pipe(pipeThree)
+    if pipeFour.stageName == "DONE":
+        check.clear_pipe(pipeFour)
+    if pipeFive.stageName == "DONE":
+        check.clear_pipe(pipeFive)
+            
+    time.sleep(1)
+
+
+    while check.WBQueue:
+        doPipe = check.WBQueue.pop(0)
+        write_to_reg(doPipe)
+        check.IFQueue.append(doPipe)
+    while check.ALUQueue:
+        doPipe = check.ALUQueue.pop(0)
+        opcode[doPipe.instr >> 4](doPipe)
+        if (doPipe.instr >> 4) != 0x2:
+            check.WBQueue.append(doPipe)
+        else:
+            check.IFQueue.append(doPipe)
+    while check.RFQueue:
+        doPipe = check.RFQueue.pop(0)
+        prog_mem = doPipe.reg_fetch(prog_mem)
+        check.ALUQueue.append(doPipe)
+    if not check.RFQueue and check.IFQueue:
+        doPipe = check.IFQueue.pop(0)
+        prog_mem = doPipe.instr_fetch(prog_mem)
+        check.RFQueue.append(doPipe)
     
 
 
