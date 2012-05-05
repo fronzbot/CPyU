@@ -11,3 +11,10 @@ add r3, r2
 sub r0, r2
 and r2, r3
 add r0, r1
+not r3
+shrl r1
+shra r3
+shla r3
+shll r0
+cpy r2, r1
+swap r0, r3

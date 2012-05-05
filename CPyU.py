@@ -5,18 +5,22 @@ prog_mem = []
 data_mem = []
 
 
-
+flag = {"C":0, "V":0, "Z":0, "N":0}
 r = [0,0,0,0]
 
 hexLookup = {'0':0, '1':1, '2':2, '3':3, '4':4,
              '5':5, '6':6, '7':7, '8':8, '9':9,
              'A':10,'B':11,'C':12,'D':13,'E':14,'F':15}
 
-def cpy():
-    pass
-
-def swp():
-    pass
+def cpy(pipe):
+    pipe.clockCycle += 1
+    pipe.stageName = "WB"
+    r[pipe.dst_reg] = r[pipe.src_reg]
+    
+def swp(pipe):
+    pipe.clockCycle += 1
+    pipe.stageName = "ALU"
+    pipe.alu_reg = r[pipe.src_reg]
 
 def ld(pipe):
     # Store
@@ -43,11 +47,17 @@ def add(pipe):
     pipe.clockCycle += 1
     pipe.stageName = "ALU"
     pipe.alu_reg = r[pipe.dst_reg] + r[pipe.src_reg]
+    if pipe.alu_reg > 0xFF:
+        pipe.alu_reg = 0xFF
+        flag["C"] ^= 1
         
 def sub(pipe):
     pipe.clockCycle += 1
     pipe.stageName = "ALU"
     pipe.alu_reg = r[pipe.dst_reg] - r[pipe.src_reg]
+    if pipe.alu_reg < 0:
+        pipe.alu_reg = -1*pipe.alu_reg
+        flag["N"]^=1
 
 def and_op(pipe):
     pipe.clockCycle += 1
@@ -60,11 +70,36 @@ def ret():
 def clt():
     pass
 
-def shift():
-    pass
+def shift(pipe):
+    pipe.clockCycle += 1
+    pipe.stageName = "ALU"
 
-def not_op():
-    pass
+    #Arithmetic left shift
+    if pipe.select == 0x0:
+        pipe.alu_reg = r[pipe.dst_reg] << 1
+        if (pipe.alu_reg & 0x180) == 0x180:
+            pipe.alu_reg &= 0xFF
+            flag["V"] ^= 1
+            
+    #Logical Left Shift        
+    elif pipe.select == 0x1:
+        pipe.alu_reg = r[pipe.dst_reg] << 1
+
+    #Arithmetic Right Shift
+    elif pipe.select == 0x2:
+        pipe.alu_reg = r[pipe.dst_reg] >> 1
+        if r[pipe.dst_reg] & 0x80 == 0x80:
+            pipe.alu_reg |= 0x80
+
+    #Logical Right Shift        
+    elif pipe.select == 0x3:
+        pipe.alu_reg = r[pipe.dst_reg] >> 1
+
+def not_op(pipe):
+    pipe.clockCycle += 1
+    pipe.stageName = "ALU"
+    pipe.alu_reg = ~r[pipe.dst_reg]&0xFF
+    
 
 def ceq():
     pass
@@ -91,7 +126,11 @@ opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
 def write_to_reg(pipe):
     pipe.clockCycle += 1
     pipe.stageName = "WB"
+    if pipe.instr >> 4 == 0x1:  #SWAP
+        r[pipe.src_reg] = r[pipe.dst_reg]
+        
     r[pipe.dst_reg] = pipe.alu_reg
+    
     if prog_mem[-1] == "00":
             pipe.stageName = "DONE"
 
@@ -149,26 +188,26 @@ while prog_mem:
             break
 
 
-    print("Pipe One\n---------")
-    print("\t"+str(hex(pipeOne.instr)))
-    print("\t"+str(pipeOne.stageName)+", "+str(pipeOne.clockCycle))
-    print("\n")
-    print("Pipe Two\n---------")
-    print("\t"+str(hex(pipeTwo.instr)))
-    print("\t"+str(pipeTwo.stageName)+", "+str(pipeTwo.clockCycle))
-    print("\n")
-    print("Pipe Three\n---------")
-    print("\t"+str(hex(pipeThree.instr)))
-    print("\t"+str(pipeThree.stageName)+", "+str(pipeThree.clockCycle))
-    print("\n")
-    print("Pipe Four\n---------")
-    print("\t"+str(hex(pipeFour.instr)))
-    print("\t"+str(pipeFour.stageName)+", "+str(pipeFour.clockCycle))
-    print("\n")
-    print("Pipe Five\n---------")
-    print("\t"+str(hex(pipeFive.instr)))
-    print("\t"+str(pipeFive.stageName)+", "+str(pipeFive.clockCycle))
-    print("\n")
+   # print("Pipe One\n---------")
+   # print("\t"+str(hex(pipeOne.instr)))
+   # print("\t"+str(pipeOne.stageName)+", "+str(pipeOne.clockCycle))
+   # print("\n")
+   # print("Pipe Two\n---------")
+   # print("\t"+str(hex(pipeTwo.instr)))
+   # print("\t"+str(pipeTwo.stageName)+", "+str(pipeTwo.clockCycle))
+   # print("\n")
+   # print("Pipe Three\n---------")
+   # print("\t"+str(hex(pipeThree.instr)))
+   # print("\t"+str(pipeThree.stageName)+", "+str(pipeThree.clockCycle))
+   # print("\n")
+   # print("Pipe Four\n---------")
+   # print("\t"+str(hex(pipeFour.instr)))
+   # print("\t"+str(pipeFour.stageName)+", "+str(pipeFour.clockCycle))
+   # print("\n")
+   # print("Pipe Five\n---------")
+   # print("\t"+str(hex(pipeFive.instr)))
+   # print("\t"+str(pipeFive.stageName)+", "+str(pipeFive.clockCycle))
+   # print("\n")
 
     if pipeOne.stageName == "DONE":
         check.clear_pipe(pipeOne)
@@ -180,8 +219,19 @@ while prog_mem:
         check.clear_pipe(pipeFour)
     if pipeFive.stageName == "DONE":
         check.clear_pipe(pipeFive)
-            
-    time.sleep(1)
+
+    #print("pipeOne :\t"+str(hex(pipeOne.instr))+",\t"+ pipeOne.stageName)
+    #print("pipeTwo :\t"+str(hex(pipeTwo.instr))+",\t"+ pipeTwo.stageName)
+    #print("pipeThree :\t"+str(hex(pipeThree.instr))+",\t"+ pipeThree.stageName)
+    #print("pipeFour :\t"+str(hex(pipeFour.instr))+",\t"+ pipeFour.stageName)
+    #print("pipeFive :\t"+str(hex(pipeFive.instr))+",\t"+ pipeFive.stageName)
+    #print("R0 is "+str(hex(r[0])))
+    #print("R1 is "+str(hex(r[1])))
+    #print("R2 is "+str(hex(r[2])))
+    #print("R3 is "+str(hex(r[3])))
+    #print("V flag is "+str(flag["V"]))
+    #print("---------\n")
+    
 
 
     while check.WBQueue:
@@ -191,10 +241,12 @@ while prog_mem:
     while check.ALUQueue:
         doPipe = check.ALUQueue.pop(0)
         opcode[doPipe.instr >> 4](doPipe)
-        if (doPipe.instr >> 4) != 0x2:
-            check.WBQueue.append(doPipe)
-        else:
+        if (doPipe.instr >> 4) == 0x0:      #COPY
             check.IFQueue.append(doPipe)
+        elif (doPipe.instr >> 4) == 0x2:    #LOAD
+            check.IFQueue.append(doPipe)
+        else:
+            check.WBQueue.append(doPipe)
     while check.RFQueue:
         doPipe = check.RFQueue.pop(0)
         prog_mem = doPipe.reg_fetch(prog_mem)
@@ -212,4 +264,5 @@ print("R0 is "+str(hex(r[0])))
 print("R1 is "+str(hex(r[1])))
 print("R2 is "+str(hex(r[2])))
 print("R3 is "+str(hex(r[3])))
+print(flag)
                         

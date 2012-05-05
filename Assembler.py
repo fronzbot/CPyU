@@ -15,11 +15,47 @@ except IOError:
     f = open(mcFile, 'w')
     f.close()
     
-def cpy():
-    pass
+def cpy(line):
+    instr = line.pop(0)
+    regs = []
+    for byte in line:
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
+        if len(regs) == 2:
+            break
+        try:
+            regs.append(regLookup[byte])
+        except KeyError:
+            print("Line "+str(lineNum)+": unkown register "+byte)
+            exit(1)
 
-def swp():
-    pass
+    word = str(0)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
+
+def swp(line):
+    instr = line.pop(0)
+    regs = []
+    for byte in line:
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
+        if len(regs) == 2:
+            break
+        try:
+            regs.append(regLookup[byte])
+        except KeyError:
+            print("Line "+str(lineNum)+": unkown register "+byte)
+            exit(1)
+
+    word = str(1)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
 
 def ld(line):
     instr = line.pop(0)
@@ -127,11 +163,59 @@ def ret():
 def clt():
     pass
 
-def shift():
-    pass
+def shift(line):
+    instr = line.pop(0)
+    regs = []
+    for byte in line:
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
+        if len(regs) == 2:
+            break
+        try:
+            regs.append(regLookup[byte])
+        except KeyError:
+            print("Line "+str(lineNum)+": unkown register "+byte)
+            exit(1)
 
-def not_op():
-    pass
+    if instr == "shla":
+        sel = 0x0
+    elif instr == "shll":
+        sel = 0x1
+    elif instr == "shra":
+        sel = 0x2
+    elif instr == "shrl":
+        sel = 0x3
+    else:
+        print("Line "+str(lineNum)+": unkown command "+instr)
+        exit(1)
+        
+    word = str(9)+str(hex(regs[0]<<2|sel)[2:]).capitalize()
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
+
+def not_op(line):
+    instr = line.pop(0)
+    regs = []
+    for byte in line:
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
+        if len(regs) == 1:
+            break
+        try:
+            regs.append(regLookup[byte])
+        except KeyError:
+            print("Line "+str(lineNum)+": unkown register "+byte)
+            exit(1)
+
+    word = str("A")+str(hex(regs[0]<<2)[2:]).capitalize()
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
 
 def ceq():
     pass
