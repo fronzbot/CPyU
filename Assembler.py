@@ -4,8 +4,7 @@ import os
 import re
 
 regLookup = {'r0':0x0, 'r1':0x1, 'r2':0x2, 'r3':0x3}
-mcFile = "out.a"
-        
+mcFile = "out.a"   
 
 try:
     f = open(mcFile, 'r')
@@ -27,7 +26,7 @@ def cpy(line):
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line "+str(lineNum)+": unkown register "+byte)
+            print("Line "+str(lineNum)+": unknown register "+byte)
             exit(1)
 
     word = str(0)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
@@ -48,7 +47,7 @@ def swp(line):
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line "+str(lineNum)+": unkown register "+byte)
+            print("Line "+str(lineNum)+": unknown register "+byte)
             exit(1)
 
     word = str(1)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
@@ -58,8 +57,10 @@ def swp(line):
     f.close()
 
 def ld(line):
-    instr = line.pop(0)
-    gotReg = False
+    instr   = line.pop(0)
+    gotReg  = False
+    memAddr = False
+    displace = False
     for byte in line:
         byte = byte.split('\n', 1)[0]
         byte = re.sub(r'\,','',byte)
@@ -70,20 +71,50 @@ def ld(line):
                 reg = regLookup[byte]
                 gotReg = True
             except KeyError:
-                print("Line "+str(lineNum)+": unkown register "+byte)
+                print("Line "+str(lineNum)+": unknown register "+byte)
                 exit(1)
         elif byte:
             try:
-                val = byte[2:]
-                break
+                if byte[0] == "r":
+                    displaceReg = regLookup[byte]
+                    displace = True
+                    memAddr  = True
+                else:
+                    val = byte[2:]
+                    displace = False
+                if not displace:
+                    break
             except IndexError:
                 print("Line "+str(lineNum)+": value "+byte+" must be hex!")
                 exit(1)
-
-    hexVal = str(val)
+                
+    if instr == "st":
+        sel = 0x3
+    elif memAddr:
+        sel = 0x2
+    else:
+        sel = 0x0
+    if memAddr:
+        if len(val) > 1:
+            try:
+                valMSB = int(val[0])
+                if valMSB > 3:
+                    print("Line "+str(lineNum)+": Invalid displacement value!")
+                    exit(1)
+            except ValueError:
+                print("Line "+str(lineNum)+": Invalid displacement value!")
+                exit(1)
+            hexVal = str(displaceReg<<2|valMSB)+str(val[1])
+        else:
+            hexVal = str(displaceReg<<2)+str(val)
+    else:
+        hexVal = str(val)
     if len(hexVal) < 2:
         hexVal = "0"+hexVal
-    word = str(2)+str(hex(reg<<2)[2:]).capitalize()+" "+hexVal
+    if memAddr:
+        word = str(2)+str(hex(reg<<2|sel)[2:]).capitalize()+" "+hexVal
+    else:
+        word = str(2)+str(hex(reg<<2|sel)[2:]).capitalize()+" "+hexVal
         
     f = open(mcFile, 'a')
     f.write(word+"\n")
@@ -105,7 +136,7 @@ def add(line):
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line "+str(lineNum)+": unkown register "+byte)
+            print("Line "+str(lineNum)+": unknown register "+byte)
             exit(1)
 
     word = str(4)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
@@ -127,7 +158,7 @@ def sub(line):
             regs.append(regLookup[byte])
         except KeyError:
             print(len(byte))
-            print("Line "+str(lineNum)+": unkown register "+byte)
+            print("Line "+str(lineNum)+": unknown register "+byte)
             exit(1)
 
     word = str(5)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
@@ -148,7 +179,7 @@ def and_op(line):
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line "+str(lineNum)+": unkown register "+byte)
+            print("Line "+str(lineNum)+": unknown register "+byte)
             exit(1)
 
     word = str(6)+str(hex(regs[0]<<2|regs[1])[2:]).capitalize()
@@ -175,7 +206,7 @@ def shift(line):
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line "+str(lineNum)+": unkown register "+byte)
+            print("Line "+str(lineNum)+": unknown register "+byte)
             exit(1)
 
     if instr == "shla":
@@ -187,7 +218,7 @@ def shift(line):
     elif instr == "shrl":
         sel = 0x3
     else:
-        print("Line "+str(lineNum)+": unkown command "+instr)
+        print("Line "+str(lineNum)+": unknown command "+instr)
         exit(1)
         
     word = str(9)+str(hex(regs[0]<<2|sel)[2:]).capitalize()
@@ -208,7 +239,7 @@ def not_op(line):
         try:
             regs.append(regLookup[byte])
         except KeyError:
-            print("Line "+str(lineNum)+": unkown register "+byte)
+            print("Line "+str(lineNum)+": unknown register "+byte)
             exit(1)
 
     word = str("A")+str(hex(regs[0]<<2)[2:]).capitalize()

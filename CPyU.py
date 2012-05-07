@@ -25,13 +25,13 @@ def swp(pipe):
 def ld(pipe):
     # Store
     if pipe.select == 0x3:
-        displace = (pipe.val_reg & 0xC0)>>2 + (pipe.val_reg & 0x3F)
-        #prog_mem[displace] = r[reg]
+        pipe.mem_reg = r[(pipe.val_reg & 0xC0) >> 6] + (pipe.val_reg & 0x3F)
+        pipe.stageName = "ALU"
     
     # Load Displacement
     elif pipe.select == 0x2:
-        displace = (pipe.val_reg & 0xC0)>>2 + (pipe.val_reg & 0x3F)
-        #r[reg] = prog_mem[displace]
+        pipe.mem_reg = r[(pipe.val_reg & 0xC0)>>6] + (pipe.val_reg & 0x3F)
+        pipe.stageName = "ALU"
                 
     # Load Immediate
     else:
@@ -122,6 +122,16 @@ opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
           11:ceq, 12:jump_call_br, 13:mul, 14:div,
           15:nop}
 
+def memory_addressing(pipe):
+    pipe.clockCycle+=1
+    pipe.stageName = "MA"
+    if pipe.select == 0x3:
+        data_mem[pipe.mem_reg] = r[pipe.dst_reg]
+    if pipe.select == 0x2:
+        r[pipe.dst_reg] = data_mem[pipe.mem_reg]
+    if prog_mem[-1] == "00":
+        pipe.stageName == "DONE"
+    
 
 def write_to_reg(pipe):
     pipe.clockCycle += 1
@@ -146,6 +156,7 @@ def get_machine_code(filename):
         instruction = line.rstrip().split(' ')
         for instr in instruction:
             prog_mem.append(instr)
+            data_mem.append(0x0)
     mc.close()
     if len(prog_mem) > 256:
         print("Error: program memory exceeded!")
@@ -153,6 +164,7 @@ def get_machine_code(filename):
         
     for i in range(len(prog_mem), 256):
         prog_mem.append("00")
+        data_mem.append(0x0)
 
     prog_mem.reverse()
         
@@ -220,34 +232,41 @@ while prog_mem:
     if pipeFive.stageName == "DONE":
         check.clear_pipe(pipeFive)
 
-    #print("pipeOne :\t"+str(hex(pipeOne.instr))+",\t"+ pipeOne.stageName)
-    #print("pipeTwo :\t"+str(hex(pipeTwo.instr))+",\t"+ pipeTwo.stageName)
-    #print("pipeThree :\t"+str(hex(pipeThree.instr))+",\t"+ pipeThree.stageName)
-    #print("pipeFour :\t"+str(hex(pipeFour.instr))+",\t"+ pipeFour.stageName)
-    #print("pipeFive :\t"+str(hex(pipeFive.instr))+",\t"+ pipeFive.stageName)
+    print("pipeOne :\t"+str(hex(pipeOne.instr))+",\t"+ pipeOne.stageName)
+    print("pipeTwo :\t"+str(hex(pipeTwo.instr))+",\t"+ pipeTwo.stageName)
+    print("pipeThree :\t"+str(hex(pipeThree.instr))+",\t"+ pipeThree.stageName)
+    print("pipeFour :\t"+str(hex(pipeFour.instr))+",\t"+ pipeFour.stageName)
+    print("pipeFive :\t"+str(hex(pipeFive.instr))+",\t"+ pipeFive.stageName)
     #print("R0 is "+str(hex(r[0])))
     #print("R1 is "+str(hex(r[1])))
     #print("R2 is "+str(hex(r[2])))
     #print("R3 is "+str(hex(r[3])))
     #print("V flag is "+str(flag["V"]))
-    #print("---------\n")
-    
+    print("---------\n")
+    time.sleep(1)
 
 
-    while check.WBQueue:
+    if check.WBQueue:
         doPipe = check.WBQueue.pop(0)
         write_to_reg(doPipe)
         check.IFQueue.append(doPipe)
-    while check.ALUQueue:
+    if check.MAQueue:
+        doPipe = check.MAQueue.pop(0)
+        memory_addressing(doPipe)
+        check.IFQueue.append(doPipe)
+    if check.ALUQueue:
         doPipe = check.ALUQueue.pop(0)
         opcode[doPipe.instr >> 4](doPipe)
         if (doPipe.instr >> 4) == 0x0:      #COPY
             check.IFQueue.append(doPipe)
         elif (doPipe.instr >> 4) == 0x2:    #LOAD
-            check.IFQueue.append(doPipe)
+            if doPipe.mem_reg:
+                check.MAQueue.append(doPipe)
+            else:
+                check.IFQueue.append(doPipe)
         else:
             check.WBQueue.append(doPipe)
-    while check.RFQueue:
+    if check.RFQueue:
         doPipe = check.RFQueue.pop(0)
         prog_mem = doPipe.reg_fetch(prog_mem)
         check.ALUQueue.append(doPipe)
@@ -265,4 +284,5 @@ print("R1 is "+str(hex(r[1])))
 print("R2 is "+str(hex(r[2])))
 print("R3 is "+str(hex(r[3])))
 print(flag)
+
                         

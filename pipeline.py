@@ -13,6 +13,7 @@ class Controller(object):
         self.RFQueue = []
         self.ALUQueue = []
         self.WBQueue = []
+        self.MAQueue = []
 
     def clear_pipe(self, pipe):
         try:
@@ -40,6 +41,7 @@ class Pipeline(object):
         self.src_reg    = 0         # Source register name (int)
         self.val_reg    = 0         # Value for 2 byte Instruction Words
         self.alu_reg    = 0         # Value output of ALU ops
+        self.mem_reg    = 0         # Memory address register
         self.select     = 0         # Selction bits for certain instructions
         self.clockCycle = 0         # Current clock
         self.stageName  = ""        # Current stage name
