@@ -3,7 +3,7 @@ import pipeline
 import time
 prog_mem = []
 data_mem = []
-
+io_mem   = []
 
 flag = {"C":0, "V":0, "Z":0, "N":0}
 r = [0,0,0,0]
@@ -40,8 +40,6 @@ def ld(pipe):
         if prog_mem[-1] == "00":
             pipe.stageName = "DONE"
 
-def in_out():
-    pass
 
 def add(pipe):
     pipe.clockCycle += 1
@@ -117,7 +115,7 @@ def nop():
     pass
 
 
-opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
+opcode = {0:cpy, 1:swp, 2:ld, 4:add, 5:sub,
           6:and_op, 7:ret, 8:clt, 9:shift, 10:not_op,
           11:ceq, 12:jump_call_br, 13:mul, 14:div,
           15:nop}
@@ -125,10 +123,19 @@ opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
 def memory_addressing(pipe):
     pipe.clockCycle+=1
     pipe.stageName = "MA"
-    if pipe.select == 0x3:
-        data_mem[pipe.mem_reg] = r[pipe.dst_reg]
-    if pipe.select == 0x2:
-        r[pipe.dst_reg] = data_mem[pipe.mem_reg]
+   
+    if (pipe.instr >> 4) == 0x2: # ld/st
+        if pipe.select == 0x3:
+            data_mem[pipe.mem_reg] = r[pipe.dst_reg]
+        elif pipe.select == 0x2:
+            r[pipe.dst_reg] = data_mem[pipe.mem_reg]
+          
+    elif (pipe.instr >> 4) == 0x3: # in/out
+        if pipe.select == 0x0:  # Out
+            io_mem[pipe.val_reg] = r[pipe.dst_reg]
+        elif pipe.select == 0x1:    # In
+            r[pipe.dst_reg] = io_mem[pipe.val_reg]
+       
     if prog_mem[-1] == "00":
         pipe.stageName == "DONE"
     
@@ -165,6 +172,7 @@ def get_machine_code(filename):
     for i in range(len(prog_mem), 256):
         prog_mem.append("00")
         data_mem.append(0x0)
+        io_mem.append(0x0)
 
     prog_mem.reverse()
         
@@ -232,18 +240,18 @@ while prog_mem:
     if pipeFive.stageName == "DONE":
         check.clear_pipe(pipeFive)
 
-    print("pipeOne :\t"+str(hex(pipeOne.instr))+",\t"+ pipeOne.stageName)
-    print("pipeTwo :\t"+str(hex(pipeTwo.instr))+",\t"+ pipeTwo.stageName)
-    print("pipeThree :\t"+str(hex(pipeThree.instr))+",\t"+ pipeThree.stageName)
-    print("pipeFour :\t"+str(hex(pipeFour.instr))+",\t"+ pipeFour.stageName)
-    print("pipeFive :\t"+str(hex(pipeFive.instr))+",\t"+ pipeFive.stageName)
+    #print("pipeOne :\t"+str(hex(pipeOne.instr))+",\t"+ pipeOne.stageName)
+    #print("pipeTwo :\t"+str(hex(pipeTwo.instr))+",\t"+ pipeTwo.stageName)
+    #print("pipeThree :\t"+str(hex(pipeThree.instr))+",\t"+ pipeThree.stageName)
+    #print("pipeFour :\t"+str(hex(pipeFour.instr))+",\t"+ pipeFour.stageName)
+    #print("pipeFive :\t"+str(hex(pipeFive.instr))+",\t"+ pipeFive.stageName)
     #print("R0 is "+str(hex(r[0])))
     #print("R1 is "+str(hex(r[1])))
     #print("R2 is "+str(hex(r[2])))
     #print("R3 is "+str(hex(r[3])))
     #print("V flag is "+str(flag["V"]))
-    print("---------\n")
-    time.sleep(1)
+    #print("---------\n")
+    #time.sleep(1)
 
 
     if check.WBQueue:
@@ -269,7 +277,10 @@ while prog_mem:
     if check.RFQueue:
         doPipe = check.RFQueue.pop(0)
         prog_mem = doPipe.reg_fetch(prog_mem)
-        check.ALUQueue.append(doPipe)
+        if (doPipe.instr >> 4) == 0x3: # IN/OUT
+            check.MAQueue.append(doPipe)
+        else:
+            check.ALUQueue.append(doPipe)
     if not check.RFQueue and check.IFQueue:
         doPipe = check.IFQueue.pop(0)
         prog_mem = doPipe.instr_fetch(prog_mem)

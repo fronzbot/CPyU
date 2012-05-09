@@ -65,7 +65,6 @@ def ld(line):
         byte = byte.split('\n', 1)[0]
         byte = re.sub(r'\,','',byte)
         byte = byte.split(';', 1)[0]
-
         if (not gotReg) and byte :
             try:
                 reg = regLookup[byte]
@@ -121,8 +120,37 @@ def ld(line):
     f.close()
 
 
-def in_out():
-    pass
+def in_out(line):
+    gotReg  = False
+    instr = line.pop(0)
+    for byte in line:
+        byte = byte.split('\n', 1)[0]
+        byte = re.sub(r'\,','',byte)
+        byte = byte.split(';', 1)[0]
+        if (not gotReg) and byte:
+            try:
+                reg = regLookup[byte]
+                gotReg = True
+            except KeyError:
+                print("Line "+str(lineNum)+": unknown register "+byte)
+                exit(1)
+        elif byte:
+            val = byte[2:]
+            break
+        
+    if instr == "in":
+        sel = 0x1
+    elif instr == "out":
+        sel = 0x0
+
+    hexVal = str(val)
+    if len(hexVal) < 2:
+        hexVal = "0"+hexVal    
+    word = str(3)+str(hex(reg<<2|sel)[2:]).capitalize()+" "+hexVal
+        
+    f = open(mcFile, 'a')
+    f.write(word+"\n")
+    f.close()
 
 def add(line):
     instr = line.pop(0)
@@ -264,10 +292,15 @@ def nop():
     pass
 
 
-
-
+# open does not work on files with underscore in name (for some reason)
+# so this prompts a warning until a real solution is found
+asmFile = sys.argv[1]
+if re.search(r'\_', asmFile):
+    print("Error: file cannot contain '_' in name")
+    exit(1)
+   
 try:
-    file = open(sys.argv[1], 'r')
+    file = open(asmFile, 'r')
 except IndexError:
     print("Error: no file specifed")
     exit(1)
@@ -283,7 +316,7 @@ while True:
         break
     lines.append(temp)
 file.close()
-    
+  
 
 commandTable = {'cpy':0x0, 'swap':0x1, 'ld':0x2, 'st':0x2, 'in':0x3,
                 'out':0x3, 'add':0x4, 'sub':0x5, 'and':0x6, 'ceq':0xB,
@@ -297,6 +330,7 @@ opcode = {0:cpy, 1:swp, 2:ld, 3:in_out, 4:add, 5:sub,
           15:nop}
 
 lineNum = 1
+
 for line in lines:
     instr = re.sub(r'\:', '', line).split(' ')
     try:

@@ -70,14 +70,15 @@ class Pipeline(object):
         if op == 0x2 or op == 0x3:
             self.val_reg = self.get_byte(mem.pop())
             if op == 0x3:
-                pass
+                self.select  = self.instr & 0x3
+                self.dst_reg = (self.instr & 0xC) >> 2
             elif op == 0x2:
                 self.select = (self.instr & 0x3)
                 if (self.instr & 0x1):
                     self.src_reg = (self.instr & 0xC) >> 2
                 else:
                     self.dst_reg = (self.instr & 0xC) >> 2
-    
+                    
         # jmp, br, call
         elif op == 0xC:
             pass
