@@ -9,11 +9,12 @@ stages = ["IF", "RF", "ALU", "WB"]
 class Controller(object):
     def __init__(self):
         self.pipes = {}
-        self.IFQueue = []
-        self.RFQueue = []
-        self.ALUQueue = []
-        self.WBQueue = []
-        self.MAQueue = []
+        self.IFQueue     = []
+        self.RFQueue     = []
+        self.ALUQueue    = []
+        self.WBQueue     = []
+        self.MAQueue     = []
+        self.masterClock = 0
 
     def clear_pipe(self, pipe):
         try:
@@ -44,6 +45,7 @@ class Pipeline(object):
         self.mem_reg    = 0         # Memory address register
         self.select     = 0         # Selction bits for certain instructions
         self.clockCycle = 0         # Current clock
+        self.stalls     = 0         # Keep track of number of pipe stalls
         self.stageName  = ""        # Current stage name
 
     def get_byte(self, val):
@@ -54,8 +56,8 @@ class Pipeline(object):
 
     def instr_fetch(self, mem):
         '''Retrieves instruction from memory'''
-        self.clockCycle += 1
-        self.stageName = "IF"
+        #self.clockCycle += 1
+        #self.stageName = "IF"
         self.instr = self.get_byte(mem.pop())
         if self.instr == 0x0:
             self.stageName = "DONE"
@@ -63,8 +65,8 @@ class Pipeline(object):
 
     def reg_fetch(self, mem):
         '''Parses instruction word for registers and selection bits'''
-        self.clockCycle += 1
-        self.stageName = "RF"
+        #self.clockCycle += 1
+        #self.stageName = "RF"
         op = self.instr >> 4
         # ld immediate, ld displacement, st; in, out
         if op == 0x2 or op == 0x3:
