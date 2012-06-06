@@ -11,8 +11,10 @@ parser.add_argument('--disp', action="store", dest="disp", nargs='+',
 parser.add_argument('--wait', action="store", dest="wait", type=int,
                     help='Choose how long to wait before progressing through program (indicated in seconds)')
 results = parser.parse_args()
-for arg in results.disp:
-    d[arg] = True
+if results.disp:
+    for arg in results.disp:
+        d[arg] = True
+        
 for allArgs in goodDispArgs:
     if allArgs not in d:
         if 'verbose' in d:
