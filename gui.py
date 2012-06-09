@@ -9,22 +9,24 @@ cmds = ['cpy', 'swp', 'ld',  'st',  'in',  'out', 'add', 'sub',
         'shra', 'shrl', 'jmp', 'br', 'call', 'ret', 'reti', 'nop']
 
 class TextEditor(Text):
-    tags = {'kw':  ('blue', 'Consolas 12 bold'),
-            'hex': ('orange', 'Consolas 12 normal'),
-            'int': ('purple', 'Consolas 12 normal')
+    tags = {'COMMAND': ('blue',   'Consolas 12 bold'  ),
+            'HEXNUM' : ('orange', 'Consolas 12 normal'),
+            'COMMENT': ('ForestGreen', 'Consolas 12 normal')
             }
     
-    def __init__(self, root):
-        Text.__init__(self, root)
-        self.grid(column=0, row=0)
-        self.yScrollbar = Scrollbar(root, orient=VERTICAL, command=self.yview)
+    def __init__(self, parent):
+        Text.__init__(self, parent)
+        self.pack(side=LEFT, expand=YES, fill=BOTH)
+        self.yScrollbar = Scrollbar(parent, orient=VERTICAL, command=self.yview)
         self['yscrollcommand'] = self.yScrollbar.set
-        self.yScrollbar.grid(column=1, row=0, stick=(N,S))
+        self.yScrollbar.pack(side=RIGHT, fill=Y)
         self.configure(font='Consolas 12 normal', width=40, height=25)
         self.config_tags()
         self.characters = ascii_letters + digits + punctuation
-        self.checkHex = False
-        self.bind('<Key>', self.key_press)
+        self.colorComment = False
+        self.commentStart = 0
+        self.lastLine = 1
+        self.bind('<Any-KeyRelease>', self.key_press)
 
     def config_tags(self):
         for tag, val in self.tags.items():
@@ -34,47 +36,44 @@ class TextEditor(Text):
         for tag in self.tags.keys():
             self.tag_remove(tag, start, end)
 
+
     def key_press(self, key):
-        cline = self.index(INSERT).split('.')[0]
+        linenum = self.index(INSERT).split('.')[0]
         lastcol = 0
-        char = self.get('%s.%d'%(cline, lastcol))
+        if self.lastLine != linenum:
+            self.colorComment = False
+        self.lastLine = linenum
+            
+        char = self.get('%s.%d'%(linenum, lastcol))
+        
         while char != '\n':
             lastcol += 1
-            char = self.get('%s.%d'%(cline, lastcol))
-
-        buffer = self.get('%s.%d'%(cline,0),'%s.%d'%(cline,lastcol))
+            char = self.get('%s.%d'%(linenum, lastcol))
+        buffer = self.get('%s.%d'%(linenum,0),'%s.%d'%(linenum,lastcol))
         tokenized = buffer.split(' ')
-
-        self.remove_tags('%s.%d'%(cline, 0), '%s.%d'%(cline, lastcol))
+      
+        self.remove_tags('%s.%d'%(linenum, 0), '%s.%d'%(linenum, lastcol))
 
         start, end = 0, 0
         for token in tokenized:
             end = start + len(token)                
             if token in cmds:
-                self.tag_add('kw', '%s.%d'%(cline, start), '%s.%d'%(cline, end))
-            else:
-                for index in range(len(token)):
-                    try:
-                        if token[index] == "x":
-                            self.checkHex = True
-                        if token[index-1] == "0" and self.checkHex:
-                            self.tag_add('hex', '%s.%d'%(cline, start-2), '%s.%d'%(cline, end))
-                        else:
-                            self.checkHex = False
-                            try:
-                                hex(int(token[index],16))
-                            except ValueError:
-                                pass
-                            else:
-                               self.tag_add('int', '%s.%d'%(cline, start+index)) 
-                    except ValueError:
-                        pass
-                        
+                self.tag_add('COMMAND', '%s.%d'%(linenum, start), '%s.%d'%(linenum, end))
+            elif len(token) >= 2 and token[0:2] == '0x':
+                self.tag_add('HEXNUM', '%s.%d'%(linenum, start), '%s.%d'%(linenum, end))
+                
+            for letter in token:
+                if letter == ';':
+                    self.colorComment = True
+                    self.commentStart = start + token.index(letter)
+                    print(self.commentStart)
+                    self.remove_tags('%s.%d'%(linenum, self.commentStart), '%s.%d'%(linenum, end))
+                   
+            if self.colorComment:
+                self.tag_add('COMMENT', '%s.%d'%(linenum, self.commentStart), '%s.%d'%(linenum, end))
 
-            
-  
             start += len(token)+1
-          
+        
 def compileAsm(*args):
     print('Compiling')
 
@@ -84,48 +83,50 @@ def saveAsm(*args):
 def loadAsm(*args):
     print("Loading")
 
+class App(Tk):
+    def __init__(self, parent):
+        Tk.__init__(self, parent)
+        self.parent = parent
+        self.initialize()
+
+    def initialize(self):
+        # Frame setup
+        self.mainframe   = ttk.PanedWindow(self.parent, orient=HORIZONTAL)
+        self.leftframe   = ttk.Labelframe(self.parent, text='CPU Visualizer', relief='groove')
+        self.rightframe  = ttk.Labelframe(self.parent, text='ASM/Machine Code Editor', relief='sunken')
+        self.editorframe = ttk.Notebook(self.rightframe)
+        self.asmframe    = ttk.Frame(self.editorframe)
+        self.mcframe     = ttk.Frame(self.editorframe)
+        self.buttonframe = ttk.Frame(self.rightframe, padding="3 3 12 12")
+
+        # Text Editor creation
+        self.asmEditor = TextEditor(self.asmframe)
+        self.mcEditor  = TextEditor(self.mcframe)
+
+        # Buttons
+        self.compileBtn = ttk.Button(self.buttonframe, text="Compile", width=8, command=compileAsm)
+        self.saveBtn    = ttk.Button(self.buttonframe, text="Save",    width=8, command=saveAsm)
+        self.loadBtn    = ttk.Button(self.buttonframe, text="Load",    width=8, command=loadAsm)
+
+        # Canvas
+        self.canvas = Canvas(self.leftframe, width=640, height=480, borderwidth=4, relief='ridge')
         
-root = Tk()
-root.wm_title("CPyU - A Python CPU Simulator")
-root.columnconfigure(0, weight=1)
+        # Pack elements
+        self.mainframe.pack(expand=YES, fill=BOTH)
+        self.mainframe.add(self.leftframe)
+        self.mainframe.add(self.rightframe)
+        self.canvas.pack(fill=BOTH)
+        self.editorframe.pack(side=TOP, fill=X)
+        self.editorframe.add(self.asmframe, text='Assembly')
+        self.editorframe.add(self.mcframe,  text='Machine Code')
+        self.buttonframe.pack(side=BOTTOM, fill=X)
+        self.compileBtn.grid(column=0, row=0, padx=5)
+        self.saveBtn.grid(column=1, row=0, padx=5)
+        self.loadBtn.grid(column=2, row=0, padx=5)
+        
+        
 
-# Frame Setup
-mainframe   = ttk.Frame(root, padding="3 3 12 12")
-mainframe.pack()
-
-rightframe  = ttk.Frame(mainframe, padding="3 3 12 12", relief='sunken')
-leftframe   = ttk.Frame(mainframe, padding="3 3 12 12", relief='groove')
-textframe   = ttk.Notebook(rightframe)
-asmframe    = ttk.Frame(textframe)
-mcframe     = ttk.Frame(textframe)
-textframe.add(asmframe, text="Assembly")
-textframe.add(mcframe,  text="Machine Code")
-buttonframe = ttk.Frame(rightframe, padding="3 3 12 12")
-visualframe = Canvas(leftframe, width=640, height=480, bg='white')
-
-
-rightframe.grid(row=0, column=1)
-leftframe.grid(row=0, column=0)
-visualframe.grid(row=0, column=0)
-textframe.grid(row=0, column=0)
-buttonframe.grid(row=1, column=0)
-
-# Text Editor
-asmEditor = TextEditor(asmframe)
-mcEditor  = TextEditor(mcframe)
-
-
-
-# Buttons
-compileBtn = ttk.Button(buttonframe, text="Compile", width=8, command=compileAsm)
-saveBtn    = ttk.Button(buttonframe, text="Save",    width=8, command=saveAsm)
-loadBtn    = ttk.Button(buttonframe, text="Load",    width=8, command=loadAsm)
-
-compileBtn.grid(row=0, column=0)
-saveBtn.grid(row=0, column=1)
-loadBtn.grid(row=0, column=2)
-
-
-for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
-
-root.mainloop()
+if __name__ == "__main__":
+    app = App(None)
+    app.title("CPyU - A Python CPU Simulator")
+    app.mainloop()
