@@ -24,7 +24,7 @@ class TextEditor(Text):
         self.yScrollbar = Scrollbar(parent, orient=VERTICAL, command=self.yview)
         self['yscrollcommand'] = self.yScrollbar.set
         self.yScrollbar.pack(side=RIGHT, fill=Y)
-        self.configure(font='Consolas 12 normal', width=40, height=25)
+        self.configure(font='Consolas 12 normal', width=40)
         self.config_tags()
         self.characters = ascii_letters + digits + punctuation
         self.colorComment = False
@@ -73,6 +73,9 @@ class TextEditor(Text):
                     self.colorComment = True
                     self.commentStart = start + token.index(letter)
                     self.remove_tags('%s.%d'%(linenum, self.commentStart), '%s.%d'%(linenum, end))
+                elif letter == ',':
+                    commaLoc = start + token.index(letter)
+                    self.remove_tags('%s.%d'%(linenum, commaLoc), '%s.%d'%(linenum, commaLoc+1))
                    
             if self.colorComment:
                 self.remove_tags('%s.%d'%(linenum, self.commentStart), '%s.%d'%(linenum, end))
