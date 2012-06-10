@@ -4,6 +4,7 @@ from tkinter import messagebox
 from tkinter import filedialog
 import keyword
 from string import ascii_letters, digits, punctuation
+import re
 cmds = ['cpy', 'swp', 'ld',  'st',  'in',  'out', 'add', 'sub',
         'and', 'ceq', 'clt', 'not', 'mul', 'div', 'shla', 'shll',
         'shra', 'shrl', 'jmp', 'br', 'call', 'ret', 'reti', 'nop']
@@ -66,13 +67,61 @@ class TextEditor(Text):
                 if letter == ';':
                     self.colorComment = True
                     self.commentStart = start + token.index(letter)
-                    print(self.commentStart)
                     self.remove_tags('%s.%d'%(linenum, self.commentStart), '%s.%d'%(linenum, end))
                    
             if self.colorComment:
+                self.remove_tags('%s.%d'%(linenum, self.commentStart), '%s.%d'%(linenum, end))
                 self.tag_add('COMMENT', '%s.%d'%(linenum, self.commentStart), '%s.%d'%(linenum, end))
 
             start += len(token)+1
+        
+    def highlight(self, line):
+        start, linenum = 0, 0
+        colorComment = False
+        commentStart = 0
+        line = re.sub(r"\n", "", line).split(" ")
+
+        for token in line:
+            end = start + len(token)
+            if token in cmds:
+                self.tag_add('COMMAND', '%s.%d'%(linenum, start), '%s.%d'%(linenum, end))
+            elif len(token) >= 2 and token[0:2] == '0x':
+                self.tag_add('HEXNUM', '%s.%d'%(linenum, start), '%s.%d'%(linenum, end))
+                
+            for letter in token:
+                if letter == ';':
+                    colorComment = True
+                    commentStart = start + token.index(letter)
+                    self.remove_tags('%s.%d'%(linenum, commentStart), '%s.%d'%(linenum, end))
+                   
+            if colorComment:
+                self.remove_tags('%s.%d'%(linenum, commentStart), '%s.%d'%(linenum, end))
+                self.tag_add('COMMENT', '%s.%d'%(linenum, commentStart), '%s.%d'%(linenum, end))
+
+            start += len(token)+1
+            
+    def loadAsm(self):
+        types = [('Assembly Source', '.asm'),('All Files', '.*')]
+        file  = filedialog.askopenfilename(initialdir='asm', filetypes=types)
+        if not file:
+            pass
+        elif file[-4:] != '.asm':
+            messagebox.showerror(parent=self, icon='error', default='ok', message='File Type Error',
+                                 detail='File cannot be loaded.  Must be .asm!')
+        else:
+            try:
+                f = open(file, 'r')
+                data = f.readlines()
+                f.close()
+                for line in data:
+                    self.insert(END, line)
+                    self.highlight(line)
+            except IOError:
+                messagebox.showerror(parent=self, icon='error', default='ok', message='Read File Error',
+                                     detail='File cannot be read.  Check to make sure that the file is not open in another program and try again')    
+    
+            
+        
         
 def compileAsm(*args):
     print('Compiling')
@@ -106,7 +155,7 @@ class App(Tk):
         # Buttons
         self.compileBtn = ttk.Button(self.buttonframe, text="Compile", width=8, command=compileAsm)
         self.saveBtn    = ttk.Button(self.buttonframe, text="Save",    width=8, command=saveAsm)
-        self.loadBtn    = ttk.Button(self.buttonframe, text="Load",    width=8, command=loadAsm)
+        self.loadBtn    = ttk.Button(self.buttonframe, text="Load",    width=8, command=self.asmEditor.loadAsm)
 
         # Canvas
         self.canvas = Canvas(self.leftframe, width=640, height=480, borderwidth=4, relief='ridge')
