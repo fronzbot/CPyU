@@ -4,19 +4,22 @@ from tkinter import messagebox
 from tkinter import filedialog
 import keyword
 from string import ascii_letters, digits, punctuation
-import re
-cmds = ['cpy', 'swp', 'ld',  'st',  'in',  'out', 'add', 'sub',
+import re, os
+import Assembler
+
+cmds = ['cpy', 'swap', 'ld',  'st',  'in',  'out', 'add', 'sub',
         'and', 'ceq', 'clt', 'not', 'mul', 'div', 'shla', 'shll',
         'shra', 'shrl', 'jmp', 'br', 'call', 'ret', 'reti', 'nop']
 
 class TextEditor(Text):
     tags = {'COMMAND': ('blue',   'Consolas 12 bold'  ),
             'HEXNUM' : ('orange', 'Consolas 12 normal'),
-            'COMMENT': ('ForestGreen', 'Consolas 12 normal')
-            }
+            'COMMENT': ('ForestGreen', 'Consolas 12 normal'),
+            'INT'    : ('red', 'Consolas 12 bold')
+           }
     
     def __init__(self, parent):
-        Text.__init__(self, parent)
+        Text.__init__(self, parent, undo=True)
         self.pack(side=LEFT, expand=YES, fill=BOTH)
         self.yScrollbar = Scrollbar(parent, orient=VERTICAL, command=self.yview)
         self['yscrollcommand'] = self.yScrollbar.set
@@ -28,6 +31,8 @@ class TextEditor(Text):
         self.commentStart = 0
         self.lastLine = 1
         self.bind('<Any-KeyRelease>', self.key_press)
+        self.compiler = Assembler.Assembler()
+
 
     def config_tags(self):
         for tag, val in self.tags.items():
@@ -75,8 +80,8 @@ class TextEditor(Text):
 
             start += len(token)+1
         
-    def highlight(self, line):
-        start, linenum = 0, 0
+    def highlight(self, line, linenum):
+        start = 0
         colorComment = False
         commentStart = 0
         line = re.sub(r"\n", "", line).split(" ")
@@ -85,6 +90,7 @@ class TextEditor(Text):
             end = start + len(token)
             if token in cmds:
                 self.tag_add('COMMAND', '%s.%d'%(linenum, start), '%s.%d'%(linenum, end))
+                
             elif len(token) >= 2 and token[0:2] == '0x':
                 self.tag_add('HEXNUM', '%s.%d'%(linenum, start), '%s.%d'%(linenum, end))
                 
@@ -113,24 +119,43 @@ class TextEditor(Text):
                 f = open(file, 'r')
                 data = f.readlines()
                 f.close()
+                num = 0
+                self.delete('0.0', END)
                 for line in data:
                     self.insert(END, line)
-                    self.highlight(line)
+                    num += 1
+                    self.highlight(line, num)
+
             except IOError:
                 messagebox.showerror(parent=self, icon='error', default='ok', message='Read File Error',
                                      detail='File cannot be read.  Check to make sure that the file is not open in another program and try again')    
     
             
-        
+    def saveAsm(*args):
+        pass
         
 def compileAsm(*args):
-    print('Compiling')
+    data = app.asmEditor.get('0.0', END)
+    f = open('tmp.asm', 'w')
+    f.write(data)
+    f.close()
+    app.asmEditor.compiler.compiler('tmp.asm')
+    if os.name == 'posix':
+        os.sysem('rm tmp.asm')
+    else:
+        os.system('del tmp.asm')
+    f = open('out.a')
+    code = f.readlines()
+    f.close()
+    lineNum = 1
+    app.mcEditor.delete('0.0', END)
+    app.mcEditor.configure(foreground='red3', font=('Consolas 12 normal'), state=NORMAL)
+    for line in code:
+        app.mcEditor.insert(END, line)
+        lineNum += 1
+    app.mcEditor.configure(state=DISABLED)
 
-def saveAsm(*args):
-    print("Saving")
 
-def loadAsm(*args):
-    print("Loading")
 
 class App(Tk):
     def __init__(self, parent):
@@ -151,10 +176,11 @@ class App(Tk):
         # Text Editor creation
         self.asmEditor = TextEditor(self.asmframe)
         self.mcEditor  = TextEditor(self.mcframe)
+        self.mcEditor.configure(state=DISABLED)
 
         # Buttons
         self.compileBtn = ttk.Button(self.buttonframe, text="Compile", width=8, command=compileAsm)
-        self.saveBtn    = ttk.Button(self.buttonframe, text="Save",    width=8, command=saveAsm)
+        self.saveBtn    = ttk.Button(self.buttonframe, text="Save",    width=8, command=self.asmEditor.saveAsm)
         self.loadBtn    = ttk.Button(self.buttonframe, text="Load",    width=8, command=self.asmEditor.loadAsm)
 
         # Canvas
