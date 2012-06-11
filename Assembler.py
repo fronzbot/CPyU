@@ -340,10 +340,12 @@ class Assembler:
         
         for line in lines:
             instr = re.sub(r'\:', '', line).split(' ')
+            if instr[0] == '\n':
+                return
             try:
                 opcode[commandTable[instr[0]]](instr)
             except KeyError or IndexError:
-                print("Line: "+str(lineNum)+" command not found: "+instr[0])
-                exit(1)
+                print("Line "+str(lineNum)+": command not found: "+instr[0])
+                return
             lineNum += 1
             
