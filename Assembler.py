@@ -4,7 +4,7 @@ import os
 import re
 
 regLookup = {'r0':0x0, 'r1':0x1, 'r2':0x2, 'r3':0x3}
-mcFile = "out.a"   
+mcFile = "hex/out.a"   
 
 class Assembler:
     def __init__(self):

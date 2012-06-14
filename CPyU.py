@@ -1,8 +1,9 @@
 #!/usr/bin/env python                                    
-import pipeline
+from packages.architecture import pipeline
+from packages.architecture import Instructions
 import time
 import argparse
-import Instructions
+
 
 hexLookup = {'0':0, '1':1, '2':2, '3':3, '4':4,
              '5':5, '6':6, '7':7, '8':8, '9':9,
@@ -129,7 +130,7 @@ def main():
     check = pipeline.Controller()
     check.pipes = [pipes.pipeOne, pipes.pipeTwo, pipes.pipeThree, pipes.pipeFour, pipes.pipeFive]
     
-    get_machine_code('out.a', mem)
+    get_machine_code('hex/out.a', mem)
 
     pipes.start_pipes(check)
     
