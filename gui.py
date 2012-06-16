@@ -25,7 +25,7 @@ class App(Tk):
         self.editorframe = ttk.Notebook(self.rightframe)
         self.asmframe    = ttk.Frame(self.editorframe)
         self.mcframe     = ttk.Frame(self.editorframe)
-        self.buttonframe = ttk.Frame(self.rightframe, padding="3 3 12 12")
+        self.buttonframe = ttk.Frame(self.parent)
         self.assembler   = Assembler.Assembler()
 
         # Text Editor creation
@@ -33,28 +33,47 @@ class App(Tk):
         self.mcEditor  = text.TextEditor(self.mcframe)
         self.mcEditor.configure(state=DISABLED)
 
+        # Button Images
+        compileImg      = PhotoImage(file='img/compile.gif')
+        saveImg         = PhotoImage(file='img/save.gif')
+        loadImg         = PhotoImage(file='img/open.gif')
+        
         # Buttons
-        self.compileBtn = ttk.Button(self.buttonframe, text="Compile", width=8, command=self.compileAsm)
-        self.saveBtn    = ttk.Button(self.buttonframe, text="Save",    width=8, command=self.saveAsm)
-        self.loadBtn    = ttk.Button(self.buttonframe, text="Load",    width=8, command=self.loadAsm)
+        self.loadBtn    = ttk.Button(self.buttonframe, image=loadImg,    command=self.loadAsm)
+        self.saveBtn    = ttk.Button(self.buttonframe, image=saveImg,    command=self.saveAsm)
+        self.compileBtn = ttk.Button(self.buttonframe, image=compileImg, command=self.compileAsm)
+        self.loadBtn.image    = loadImg
+        self.saveBtn.image    = saveImg
+        self.compileBtn.image = compileImg
+        
 
         # Canvas
         #self.canvas = Canvas(self.leftframe, width=640, height=480, borderwidth=4, relief='ridge')
-        self.canvas = box.CPU_Canvas(self.leftframe, 640, 480, 'white')
+        self.canvas = box.CPU_Canvas(self.leftframe, 800, 600, 'white')
         
         # Pack elements
+        self.buttonframe.pack(side=TOP, fill=X, anchor=N, pady=2, padx=10)
+        ttk.Separator(orient=HORIZONTAL).pack(side=TOP, fill=X, anchor=N, pady=4)
         self.mainframe.pack(expand=YES, fill=BOTH)
         self.mainframe.add(self.leftframe)
         self.mainframe.add(self.rightframe)
+
+        
         self.canvas.pack(fill=BOTH)
         self.editorframe.pack(side=TOP, fill=X)
         self.editorframe.add(self.asmframe, text='Assembly')
         self.editorframe.add(self.mcframe,  text='Machine Code')
-        self.buttonframe.pack(side=BOTTOM, fill=X)
-        self.compileBtn.grid(column=0, row=0, padx=5)
-        self.saveBtn.grid(column=1, row=0, padx=5)
-        self.loadBtn.grid(column=2, row=0, padx=5)
+        #self.compileBtn.grid(column=0, row=0, padx=5, sticky=N)
+        #self.saveBtn.grid(column=1, row=0, padx=5, sticky=N)
+        #self.loadBtn.grid(column=2, row=0, padx=5, sticky=N)
+        self.loadBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.saveBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.compileBtn.pack(side=LEFT, pady=2, anchor=N)
+        
+        
+        
 
+        
     def compileAsm(self):
         data = self.asmEditor.get('0.0', END)
         f = open('asm/tmp.asm', 'w')
