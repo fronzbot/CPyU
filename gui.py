@@ -3,10 +3,12 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 from packages.pygui import text
+from packages.pygui import box
 import keyword
 from string import ascii_letters, digits, punctuation
 import re, os
 import Assembler
+
 
 
 class App(Tk):
@@ -37,7 +39,8 @@ class App(Tk):
         self.loadBtn    = ttk.Button(self.buttonframe, text="Load",    width=8, command=self.loadAsm)
 
         # Canvas
-        self.canvas = Canvas(self.leftframe, width=640, height=480, borderwidth=4, relief='ridge')
+        #self.canvas = Canvas(self.leftframe, width=640, height=480, borderwidth=4, relief='ridge')
+        self.canvas = box.CPU_Canvas(self.leftframe, 640, 480, 'white')
         
         # Pack elements
         self.mainframe.pack(expand=YES, fill=BOTH)

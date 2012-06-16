@@ -188,49 +188,59 @@ def main():
         # Loop through pipes
         # This is where all the CPU logic is
         check.masterClock += 1
+
+        # Perform instruction in Write-Back Queue
         if check.WBQueue:
             doPipe = check.WBQueue.pop(0)
             doPipe.clockCycle += 1
-            Instructions.write_to_reg(doPipe, mem)
+            Instructions.write_to_reg(doPipe, mem)  # Write to the register
             if doPipe.stageName != "DONE":
-                check.IFQueue.append(doPipe)
+                check.IFQueue.append(doPipe)    # Send to Instruction-Fetch Queue
                 doPipe.stageName = "IF"
+
+        # Perform instruction in Memory-Write/Read Queue        
         if check.MAQueue:
             doPipe = check.MAQueue.pop(0)
             doPipe.clockCycle += 1
-            Instructions.memory_addressing(doPipe, mem)
+            Instructions.memory_addressing(doPipe, mem) # Write/Read from Memory
             if doPipe.stageName != "DONE":
-                check.IFQueue.append(doPipe)
+                check.IFQueue.append(doPipe)            # Send to Instruction-Fetch Queue
                 doPipe.stageName = "IF"
+
+        # Perform instruction in ALU Queue    
         if check.ALUQueue:
             doPipe = check.ALUQueue.pop(0)
             doPipe.clockCycle += 1
             opcode[doPipe.instr >> 4](doPipe, mem)
-            if (doPipe.instr >> 4) == 0x0 and doPipe.stageName != "DONE":      #COPY
-                check.IFQueue.append(doPipe)
+            if (doPipe.instr >> 4) == 0x0 and doPipe.stageName != "DONE":   # If the instruction is to copy
+                check.IFQueue.append(doPipe)                                # Send to Instruction-Fetch Queue
                 doPipe.stageName = "IF"
-            elif (doPipe.instr >> 4) == 0x2 and doPipe.stageName != "DONE":    #LOAD
-                if doPipe.mem_reg:
-                    check.MAQueue.append(doPipe)
+            elif (doPipe.instr >> 4) == 0x2 and doPipe.stageName != "DONE": # If the instruction is to load
+                if doPipe.mem_reg:                                          # if there is a memory address
+                    check.MAQueue.append(doPipe)                            # Send to Memory Write/Read queue
                     doPipe.stageName = "MA"
                 else:
-                    check.IFQueue.append(doPipe)
+                    check.IFQueue.append(doPipe)                            # Otherwise send to Instruction-Fetch Queue
                     doPipe.stageName = "IF"
-            elif doPipe.stageName != "DONE":
-                check.WBQueue.append(doPipe)
+            elif doPipe.stageName != "DONE":                                # If instruction is complete    
+                check.WBQueue.append(doPipe)                                # Send to Write-Back Queue
                 doPipe.stageName = "WB"
+
+        # Perform instruction in Register-Fetch Queue
         if check.RFQueue:
             doPipe = check.RFQueue.pop(0)
             doPipe.clockCycle += 1
             mem.prog = doPipe.reg_fetch(mem.prog)
-            if (doPipe.instr >> 4) == 0x3 and doPipe.stageName != "DONE": # IN/OUT
-                check.MAQueue.append(doPipe)
+            if (doPipe.instr >> 4) == 0x3 and doPipe.stageName != "DONE":   # If the instruction is IN or OUT
+                check.MAQueue.append(doPipe)                                # Send to Memory Write/Read Queue
                 doPipe.stageName = "MA"
-            elif doPipe.stageName != "DONE":
-                check.ALUQueue.append(doPipe)
+            elif doPipe.stageName != "DONE":                                # Otherise if instruction is complete
+                check.ALUQueue.append(doPipe)                               # Send to ALU Queue
                 doPipe.stageName = "ALU"
-        if not check.RFQueue and check.IFQueue:
-            doPipe = check.IFQueue.pop(0)
+
+        # Check if nothing in Register-Fetch and Instruction-Fetch has at least one instruction
+        if not check.RFQueue and check.IFQueue:                             
+            doPipe = check.IFQueue.pop(0)               # Do instruction and send to Register-Fetch Queue
             doPipe.clockCycle += 1
             mem.prog = doPipe.instr_fetch(mem.prog)
             if doPipe.stageName != "DONE":
