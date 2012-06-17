@@ -122,10 +122,12 @@ def get_machine_code(filename, memory):
     # Flips memory so top of stack is at end of list
     memory.prog.reverse()
         
-
+pause = 0
 def main():
+    global pause
     '''Main CPU Architecture'''
     mem   = Memory()
+        
     pipes = Pipes() 
     check = pipeline.Controller()
     check.pipes = [pipes.pipeOne, pipes.pipeTwo, pipes.pipeThree, pipes.pipeFour, pipes.pipeFive]
@@ -133,22 +135,34 @@ def main():
     get_machine_code('hex/out.a', mem)
 
     pipes.start_pipes(check)
+
+    # Update Pipe Stages
+    app.canvas.pipeOne.update(pipes.pipeOne.stageName)
+    app.canvas.pipeTwo.update(pipes.pipeTwo.stageName)
+    app.canvas.pipeThree.update(pipes.pipeThree.stageName)
+    app.canvas.pipeFour.update(pipes.pipeFour.stageName)
+    app.canvas.pipeFive.update(pipes.pipeFive.stageName)
+    
+    # Update Program Memory on screen
+    i = 0
+    mem.prog.reverse()
+    for val in mem.prog:
+        app.canvas.progMem.update(val, i)
+        i += 1
+    mem.prog.reverse()
+
+    app.update()
     
     while mem.prog:
+        time.sleep(1)
+        
         if mem.prog[-1] == "00":
             if pipes.done(check):
                 break
+
+        while pause:
+            app.update()
             
-        #if pipeOne.stageName == "DONE":
-        #    check.clear_pipe(pipeOne)
-        #if pipeTwo.stageName == "DONE":
-        #    check.clear_pipe(pipeTwo)
-        #if pipeThree.stageName == "DONE":
-        #    check.clear_pipe(pipeThree)
-        #if pipeFour.stageName == "DONE":
-        #    check.clear_pipe(pipeFour)
-        #if pipeFive.stageName == "DONE":
-        #    check.clear_pipe(pipeFive)
         '''
         # DEBUGGING PRINTS
         if d['clock']:
@@ -165,22 +179,7 @@ def main():
             print("pipeThree Stall Count:\t"+str(pipeThree.stalls))
             print("pipeFour  Stall Count:\t"+str(pipeFour.stalls))
             print("pipeFive  Stall Count:\t"+str(pipeFive.stalls))
-        if d['reg']:
-            print("R0 is "+str(hex(r[0])))
-            print("R1 is "+str(hex(r[1])))
-            print("R2 is "+str(hex(r[2])))
-            print("R3 is "+str(hex(r[3])))
-        if d['flag']:
-            print("C flag is "+str(flag["C"]))
-            print("V flag is "+str(flag["V"]))
-            print("Z flag is "+str(flag["Z"]))
-            print("N flag is "+str(flag["N"]))
 
-        if d['reg'] or d['flag'] or d['pipe']:
-            print("---------\n")
-
-        if results.wait:
-            time.sleep(results.wait)
         '''
         # Check stalls
         pipes.check_stalls(check)
@@ -247,16 +246,27 @@ def main():
                 check.RFQueue.append(doPipe)
                 doPipe.stageName = "RF"
 
+        
         # Update screen every clock cycle
-        time.sleep(1)
+        '''Pipe Stage Update'''
+        app.canvas.pipeOne.update(pipes.pipeOne.stageName)
+        app.canvas.pipeTwo.update(pipes.pipeTwo.stageName)
+        app.canvas.pipeThree.update(pipes.pipeThree.stageName)
+        app.canvas.pipeFour.update(pipes.pipeFour.stageName)
+        app.canvas.pipeFive.update(pipes.pipeFive.stageName)
+        
+        '''Register Update'''
         app.canvas.r0.update(hex(mem.r[0])[2:])
         app.canvas.r1.update(hex(mem.r[1])[2:])
         app.canvas.r2.update(hex(mem.r[2])[2:])
         app.canvas.r3.update(hex(mem.r[3])[2:])
+
+        '''Flag Update'''
         app.canvas.C_flag.update(str(mem.flag['C']))
         app.canvas.N_flag.update(str(mem.flag['N']))
         app.canvas.V_flag.update(str(mem.flag['V']))
         app.canvas.Z_flag.update(str(mem.flag['Z']))
+        
         app.update()
 
 
@@ -271,9 +281,19 @@ def main():
     app.canvas.Z_flag.update(str(mem.flag['Z']))
     app.update()
 
+def pause_sim():
+    global pause
+    pause = 1
+    app.runBtn.configure(command=run_sim)
+
+def run_sim():
+    global pause
+    pause = 0
+    app.runBtn.configure(command=main)
 
 if __name__ == '__main__':
     app = gui.App(None)
     app.title("CPyU - A Python CPU Simulator")
     app.runBtn.configure(command=main)
+    app.pauseBtn.configure(command=pause_sim)
     app.mainloop()

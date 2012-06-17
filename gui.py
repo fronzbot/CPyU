@@ -81,9 +81,6 @@ class App(Tk):
         self.editorframe.pack(side=TOP, fill=X)
         self.editorframe.add(self.asmframe, text='Assembly')
         self.editorframe.add(self.mcframe,  text='Machine Code')
-        #self.compileBtn.grid(column=0, row=0, padx=5, sticky=N)
-        #self.saveBtn.grid(column=1, row=0, padx=5, sticky=N)
-        #self.loadBtn.grid(column=2, row=0, padx=5, sticky=N)
         self.loadBtn.pack(side=LEFT, pady=2, anchor=N)
         self.saveBtn.pack(side=LEFT, pady=2, anchor=N)
         self.settingsBtn.pack(side=LEFT, pady=2, anchor=N)
@@ -113,8 +110,9 @@ class App(Tk):
         code = f.readlines()
         f.close()
         lineNum = 1
+        self.mcEditor.configure(state=NORMAL)
         self.mcEditor.delete('0.0', END)
-        self.mcEditor.configure(foreground='red3', font=('Consolas 12 normal'), state=NORMAL)
+        self.mcEditor.configure(foreground='red3', font=('Consolas 12 normal'))
         for line in code:
             self.mcEditor.insert(END, line)
             lineNum += 1

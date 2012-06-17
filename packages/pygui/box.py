@@ -6,15 +6,16 @@ from tkinter import filedialog
 class CPU_Canvas(Canvas):
     def __init__(self, parent, width, height, background):
         Canvas.__init__(self, parent, width=width, height=height, background=background, borderwidth=4, relief='groove')
-        self.parent    = parent
-        self.pipeOne   = Visual_Pipe(self.parent, self, (75, 25,  125, 75),  "P1", 'DeepSkyBlue3')
-        self.pipeTwo   = Visual_Pipe(self.parent, self, (75, 115, 125, 165), "P2", 'DarkOliveGreen4')
-        self.pipeThree = Visual_Pipe(self.parent, self, (75, 205, 125, 255), "P3", 'DarkGoldenRod4')
-        self.pipeFour  = Visual_Pipe(self.parent, self, (75, 295, 125, 345), "P4", 'DarkOrange3')
-        self.pipeFive  = Visual_Pipe(self.parent, self, (75, 385, 125, 435), "P5", 'dark magenta')
+        self.parent     = parent
+        self.background = background
+        self.pipeOne    = Visual_Pipe(self.parent, self, (75, 25,  125, 75),  "P1", 'DeepSkyBlue3')
+        self.pipeTwo    = Visual_Pipe(self.parent, self, (75, 115, 125, 165), "P2", 'DarkOliveGreen4')
+        self.pipeThree  = Visual_Pipe(self.parent, self, (75, 205, 125, 255), "P3", 'DarkGoldenRod4')
+        self.pipeFour   = Visual_Pipe(self.parent, self, (75, 295, 125, 345), "P4", 'DarkOrange3')
+        self.pipeFive   = Visual_Pipe(self.parent, self, (75, 385, 125, 435), "P5", 'dark magenta')
         self.create_line(545, 0, 545, height)
-        self.progMem   = Visual_Memory(self.parent, self, 256, 585, "PM")
-        self.dataMem   = Visual_Memory(self.parent, self, 256, 800, "DM")
+        self.progMem    = Visual_Memory(self.parent, self, 256, 585, "PM")
+        self.dataMem    = Visual_Memory(self.parent, self, 256, 800, "DM")
 
         # Pipe Current Instructions
         self.create_text(60, 480, text="P1 Instr:", fill='DeepSkyBlue3', font=('Helvetica 14 bold'))
@@ -61,12 +62,11 @@ class Register(object):
         self.val    = self.canvas.create_text(x, y, text="00", fill='ForestGreen', font=('Helvetica 14 bold'))
 
     def update(self, new_val):
-        self.canvas.delete(self.val)
         try:
             new_val = new_val[0].capitalize()+new_val[1].capitalize()
         except IndexError:
             new_val = '0'+new_val[0].capitalize()
-        self.val = self.canvas.create_text(self.x, self.y, text=new_val, fill='ForestGreen', font=('Helvetica 14 bold'))
+        self.canvas.itemconfig(self.val, text=new_val)
 
 
 
@@ -79,19 +79,21 @@ class Flag(object):
         self.val    = self.canvas.create_text(x, y, text="0", fill='maroon4', font=('Helvetica 14 bold'))
 
     def update(self, new_val):
-        self.canvas.delete(self.val)
-        self.val = self.canvas.create_text(self.x, self.y, text=new_val, fill='maroon4', font=('Helvetica 14 bold'))
+        self.canvas.itemconfig(self.val, text=new_val)
 
 
         
 class Visual_Pipe(object):
     '''Class for visual pipeline'''
     def __init__(self, parent, canvas, pos, tag, color):
-        self.parent  = parent
-        self.canvas  = canvas
-        self.pos     = pos
-        self.width   = pos[2]-pos[0]
-        self.height  = pos[3]-pos[1]
+        self.parent     = parent
+        self.canvas     = canvas
+        self.pos        = pos
+        self.width      = pos[2]-pos[0]
+        self.height     = pos[3]-pos[1]
+        self.color      = color
+        self.tag        = tag
+        self.currStage  = 0
 
         x = self.width  + 40
 
@@ -101,6 +103,9 @@ class Visual_Pipe(object):
         self.ALU_box = self.canvas.create_rectangle(pos[0]+x*2, pos[1], pos[2]+x*2, pos[3], width=2, tag=(tag, "ALU"))
         self.MA_box  = self.canvas.create_rectangle(pos[0]+x*3, pos[1], pos[2]+x*3, pos[3], width=2, tag=(tag, "MA"))
         self.WB_box  = self.canvas.create_rectangle(pos[0]+x*4, pos[1], pos[2]+x*4, pos[3], width=2, tag=(tag, "WB"))
+
+        self.boxes = {"IF": self.IF_box, "RF": self.RF_box, "ALU": self.ALU_box,
+                      "MA": self.MA_box, "WB": self.WB_box}
 
         # Text
         self.canvas.create_text(30, pos[1]+self.height/2, text=tag+": ", fill=color, font=('Helvetica 14 bold'))
@@ -172,6 +177,13 @@ class Visual_Pipe(object):
         self.canvas.create_oval((pos[2]+x*3+pos[0]+x*4)/2-2, center-2, (pos[2]+x*3+pos[0]+x*4)/2+2, center+2, fill='black') # MA-o-WB
         self.canvas.create_oval((pos[2]+x*4+pos[0]+x*5)/2-2, center-2, (pos[2]+x*4+pos[0]+x*5)/2+2, center+2, fill='black') # WB-o-
 
+    def update(self, new_stage):
+        if self.currStage:
+            self.canvas.itemconfig(self.currStage, fill=self.canvas.background)
+
+        if new_stage != "DONE":
+            self.currStage = self.boxes[new_stage]
+            self.canvas.itemconfig(self.currStage, fill=self.color)
 
 class Visual_Memory(object):
     def __init__(self, parent, canvas, mem_size, x_start, name):
@@ -179,6 +191,7 @@ class Visual_Memory(object):
         self.canvas   = canvas
         self.mem_size = mem_size
         self.x_start  = x_start
+        self.name     = name
         self.array = []
         self.canvas.create_text(self.x_start+75, 25, text=name, font=('Helvetica 10 bold'))
         y = 50
@@ -190,15 +203,16 @@ class Visual_Memory(object):
             val = val[0].capitalize()+val[1].capitalize()
             if x == self.x_start:
                 self.canvas.create_text(x-20, y, text=val+"|", font=('Helvetica 8 underline bold'), fill='grey45')
-            self.array.append(self.canvas.create_text(x, y, tag=(name, i), text="00", font=('Helvetica 8 normal'), fill='SkyBlue4'))
+            self.array.append(self.canvas.create_text(x, y, tag=(name, str(i)), text="00", font=('Helvetica 8 normal'), fill='SkyBlue4'))
             x += 20
 
             if (i+1) % 8 == 0:
                 y += 15
                 x -= 160
  
-
-
+    def update(self, new_val, mem_loc):
+        self.canvas.itemconfig(self.array[mem_loc], text=new_val)
+        
 
 
 
