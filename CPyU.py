@@ -3,7 +3,7 @@ from packages.architecture import pipeline
 from packages.architecture import Instructions
 import time
 import argparse
-
+import gui
 
 hexLookup = {'0':0, '1':1, '2':2, '3':3, '4':4,
              '5':5, '6':6, '7':7, '8':8, '9':9,
@@ -246,26 +246,34 @@ def main():
             if doPipe.stageName != "DONE":
                 check.RFQueue.append(doPipe)
                 doPipe.stageName = "RF"
-        
-    print("R0 is "+str(hex(mem.r[0])))
-    print("R1 is "+str(hex(mem.r[1])))
-    print("R2 is "+str(hex(mem.r[2])))
-    print("R3 is "+str(hex(mem.r[3])))
 
-'''
-if d['reg']:
-    print("R0 is "+str(hex(r[0])))
-    print("R1 is "+str(hex(r[1])))
-    print("R2 is "+str(hex(r[2])))
-    print("R3 is "+str(hex(r[3])))
-if d['flag']:
-    print(flag)
-if d['stalls']:
-    print("pipeOne   Stalls:\t"+str(pipeOne.stalls))
-    print("pipeTwo   Stalls:\t"+str(pipeTwo.stalls))
-    print("pipeThree Stalls:\t"+str(pipeThree.stalls))
-    print("pipeFour  Stalls:\t"+str(pipeFour.stalls))
-    print("pipeFive  Stalls:\t"+str(pipeFive.stalls))
-'''
+        # Update screen every clock cycle
+        time.sleep(1)
+        app.canvas.r0.update(hex(mem.r[0])[2:])
+        app.canvas.r1.update(hex(mem.r[1])[2:])
+        app.canvas.r2.update(hex(mem.r[2])[2:])
+        app.canvas.r3.update(hex(mem.r[3])[2:])
+        app.canvas.C_flag.update(str(mem.flag['C']))
+        app.canvas.N_flag.update(str(mem.flag['N']))
+        app.canvas.V_flag.update(str(mem.flag['V']))
+        app.canvas.Z_flag.update(str(mem.flag['Z']))
+        app.update()
+
+
+    # Update screen when program finished
+    app.canvas.r0.update(hex(mem.r[0])[2:])
+    app.canvas.r1.update(hex(mem.r[1])[2:])
+    app.canvas.r2.update(hex(mem.r[2])[2:])
+    app.canvas.r3.update(hex(mem.r[3])[2:])
+    app.canvas.C_flag.update(str(mem.flag['C']))
+    app.canvas.N_flag.update(str(mem.flag['N']))
+    app.canvas.V_flag.update(str(mem.flag['V']))
+    app.canvas.Z_flag.update(str(mem.flag['Z']))
+    app.update()
+
+
 if __name__ == '__main__':
-    main()
+    app = gui.App(None)
+    app.title("CPyU - A Python CPU Simulator")
+    app.runBtn.configure(command=main)
+    app.mainloop()

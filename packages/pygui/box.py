@@ -7,16 +7,86 @@ class CPU_Canvas(Canvas):
     def __init__(self, parent, width, height, background):
         Canvas.__init__(self, parent, width=width, height=height, background=background, borderwidth=4, relief='groove')
         self.parent    = parent
-        self.pipeOne   = Visual_Pipe(self.parent, self, (75, 25,  125, 75),  "P1")
-        self.pipeTwo   = Visual_Pipe(self.parent, self, (75, 115, 125, 165), "P2")
-        self.pipeThree = Visual_Pipe(self.parent, self, (75, 205, 125, 255), "P3")
-        self.pipeFour  = Visual_Pipe(self.parent, self, (75, 295, 125, 345), "P4")
-        self.pipeFive  = Visual_Pipe(self.parent, self, (75, 385, 125, 435), "P5")
+        self.pipeOne   = Visual_Pipe(self.parent, self, (75, 25,  125, 75),  "P1", 'DeepSkyBlue3')
+        self.pipeTwo   = Visual_Pipe(self.parent, self, (75, 115, 125, 165), "P2", 'DarkOliveGreen4')
+        self.pipeThree = Visual_Pipe(self.parent, self, (75, 205, 125, 255), "P3", 'DarkGoldenRod4')
+        self.pipeFour  = Visual_Pipe(self.parent, self, (75, 295, 125, 345), "P4", 'DarkOrange3')
+        self.pipeFive  = Visual_Pipe(self.parent, self, (75, 385, 125, 435), "P5", 'dark magenta')
+        self.create_line(545, 0, 545, height)
+        self.progMem   = Visual_Memory(self.parent, self, 256, 585, "PM")
+        self.dataMem   = Visual_Memory(self.parent, self, 256, 800, "DM")
+
+        # Pipe Current Instructions
+        self.create_text(60, 480, text="P1 Instr:", fill='DeepSkyBlue3', font=('Helvetica 14 bold'))
+        self.create_text(60, 505, text="P2 Instr:", fill='DarkOliveGreen4', font=('Helvetica 14 bold'))
+        self.create_text(60, 530, text="P3 Instr:", fill='DarkGoldenRod4', font=('Helvetica 14 bold'))
+        self.create_text(60, 555, text="P4 Instr:", fill='DarkOrange3', font=('Helvetica 14 bold'))
+        self.create_text(60, 580, text="P5 Instr:", fill='dark magenta', font=('Helvetica 14 bold'))
+
+        self.p1_instr = self.create_text(120, 480, text="-", fill='blue', font=('Helvetica 14 bold'), anchor=W)
+        self.p2_instr = self.create_text(120, 505, text="-", fill='blue', font=('Helvetica 14 bold'), anchor=W)
+        self.p3_instr = self.create_text(120, 530, text="-", fill='blue', font=('Helvetica 14 bold'), anchor=W)
+        self.p4_instr = self.create_text(120, 555, text="-", fill='blue', font=('Helvetica 14 bold'), anchor=W)
+        self.p5_instr = self.create_text(120, 580, text="-", fill='blue', font=('Helvetica 14 bold'), anchor=W)
+        
+        # Registers
+        self.create_text(585, 545, text="R0:", fill='black', font=('Helvetica 14 bold'))
+        self.create_text(585, 575, text="R1:", fill='black', font=('Helvetica 14 bold'))
+        self.create_text(670, 545, text="R2:", fill='black', font=('Helvetica 14 bold'))
+        self.create_text(670, 575, text="R3:", fill='black', font=('Helvetica 14 bold'))
+        self.r0 = Register(self, 615, 545)
+        self.r1 = Register(self, 615, 575)
+        self.r2 = Register(self, 700, 545)
+        self.r3 = Register(self, 700, 575)
+        
+        # Flags
+        self.create_text(800, 545, text="C:", fill='black', font=('Helvetica 14 bold'))
+        self.create_text(800, 575, text="N:", fill='black', font=('Helvetica 14 bold'))
+        self.create_text(860, 545, text="V:", fill='black', font=('Helvetica 14 bold'))
+        self.create_text(860, 575, text="Z:", fill='black', font=('Helvetica 14 bold'))
+        self.C_flag = Flag(self, 820, 545)
+        self.N_flag = Flag(self, 820, 575)
+        self.V_flag = Flag(self, 880, 545)
+        self.Z_flag = Flag(self, 880, 575)
+
+
+
+
+class Register(object):
+    '''Class for Register output'''
+    def __init__(self, canvas, x, y):
+        self.canvas = canvas
+        self.x      = x
+        self.y      = y
+        self.val    = self.canvas.create_text(x, y, text="00", fill='ForestGreen', font=('Helvetica 14 bold'))
+
+    def update(self, new_val):
+        self.canvas.delete(self.val)
+        try:
+            new_val = new_val[0].capitalize()+new_val[1].capitalize()
+        except IndexError:
+            new_val = '0'+new_val[0].capitalize()
+        self.val = self.canvas.create_text(self.x, self.y, text=new_val, fill='ForestGreen', font=('Helvetica 14 bold'))
+
+
+
+class Flag(object):
+    '''Class for Flag output'''
+    def __init__(self, canvas, x, y):
+        self.canvas = canvas
+        self.x      = x
+        self.y      = y
+        self.val    = self.canvas.create_text(x, y, text="0", fill='maroon4', font=('Helvetica 14 bold'))
+
+    def update(self, new_val):
+        self.canvas.delete(self.val)
+        self.val = self.canvas.create_text(self.x, self.y, text=new_val, fill='maroon4', font=('Helvetica 14 bold'))
 
 
         
 class Visual_Pipe(object):
-    def __init__(self, parent, canvas, pos, tag):
+    '''Class for visual pipeline'''
+    def __init__(self, parent, canvas, pos, tag, color):
         self.parent  = parent
         self.canvas  = canvas
         self.pos     = pos
@@ -33,7 +103,7 @@ class Visual_Pipe(object):
         self.WB_box  = self.canvas.create_rectangle(pos[0]+x*4, pos[1], pos[2]+x*4, pos[3], width=2, tag=(tag, "WB"))
 
         # Text
-        self.canvas.create_text(30, pos[1]+self.height/2, text=tag+": ", fill='navy', font=('Helvetica 14 bold'))
+        self.canvas.create_text(30, pos[1]+self.height/2, text=tag+": ", fill=color, font=('Helvetica 14 bold'))
         self.canvas.create_text(pos[0]+25,     pos[1]+self.height/2, text="IF",  font=('Helvetica 10 bold'))
         self.canvas.create_text(pos[0]+25+x,   pos[1]+self.height/2, text="RF",  font=('Helvetica 10 bold'))
         self.canvas.create_text(pos[0]+25+x*2, pos[1]+self.height/2, text="ALU", font=('Helvetica 10 bold'))
@@ -103,8 +173,30 @@ class Visual_Pipe(object):
         self.canvas.create_oval((pos[2]+x*4+pos[0]+x*5)/2-2, center-2, (pos[2]+x*4+pos[0]+x*5)/2+2, center+2, fill='black') # WB-o-
 
 
+class Visual_Memory(object):
+    def __init__(self, parent, canvas, mem_size, x_start, name):
+        self.parent   = parent
+        self.canvas   = canvas
+        self.mem_size = mem_size
+        self.x_start  = x_start
+        self.array = []
+        self.canvas.create_text(self.x_start+75, 25, text=name, font=('Helvetica 10 bold'))
+        y = 50
+        x = self.x_start
+        for i in range(0, mem_size):
+            val = hex(i)[2:]
+            if len(val) < 2:
+                val = "0"+val[0]
+            val = val[0].capitalize()+val[1].capitalize()
+            if x == self.x_start:
+                self.canvas.create_text(x-20, y, text=val+"|", font=('Helvetica 8 underline bold'), fill='grey45')
+            self.array.append(self.canvas.create_text(x, y, tag=(name, i), text="00", font=('Helvetica 8 normal'), fill='SkyBlue4'))
+            x += 20
 
-
+            if (i+1) % 8 == 0:
+                y += 15
+                x -= 160
+ 
 
 
 

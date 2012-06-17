@@ -24,7 +24,7 @@ class TextEditor(Text):
         self.yScrollbar = Scrollbar(parent, orient=VERTICAL, command=self.yview)
         self['yscrollcommand'] = self.yScrollbar.set
         self.yScrollbar.pack(side=RIGHT, fill=Y)
-        self.configure(font='Consolas 12 normal', width=30, height=2)
+        self.configure(font='Consolas 12 normal', width=38, height=28)
         self.config_tags()
         self.characters = ascii_letters + digits + punctuation
         self.colorComment = False

@@ -8,7 +8,7 @@ mcFile = "hex/out.a"
 
 class Assembler:
     def __init__(self):
-        self.open_mc()
+        pass
 
     def open_mc(self):
         try:

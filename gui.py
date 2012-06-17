@@ -34,22 +34,40 @@ class App(Tk):
         self.mcEditor.configure(state=DISABLED)
 
         # Button Images
-        compileImg      = PhotoImage(file='img/compile.gif')
+        loadImg         = PhotoImage(file='img/load.gif')
         saveImg         = PhotoImage(file='img/save.gif')
-        loadImg         = PhotoImage(file='img/open.gif')
+        settingsImg     = PhotoImage(file='img/settings.gif')
+        undoImg         = PhotoImage(file='img/undo.gif')
+        compileImg      = PhotoImage(file='img/compile.gif')
+        runImg          = PhotoImage(file='img/run.gif')
+        pauseImg        = PhotoImage(file='img/pause.gif')
+        stopImg         = PhotoImage(file='img/stop.gif')
+        nextImg         = PhotoImage(file='img/next.gif')
+        
         
         # Buttons
-        self.loadBtn    = ttk.Button(self.buttonframe, image=loadImg,    command=self.loadAsm)
-        self.saveBtn    = ttk.Button(self.buttonframe, image=saveImg,    command=self.saveAsm)
-        self.compileBtn = ttk.Button(self.buttonframe, image=compileImg, command=self.compileAsm)
-        self.loadBtn.image    = loadImg
-        self.saveBtn.image    = saveImg
-        self.compileBtn.image = compileImg
+        self.loadBtn     = ttk.Button(self.buttonframe, image=loadImg,    command=self.loadAsm)
+        self.saveBtn     = ttk.Button(self.buttonframe, image=saveImg,    command=self.saveAsm)
+        self.settingsBtn = ttk.Button(self.buttonframe, image=settingsImg)
+        self.undoBtn     = ttk.Button(self.buttonframe, image=undoImg)
+        self.compileBtn  = ttk.Button(self.buttonframe, image=compileImg, command=self.compileAsm)
+        self.runBtn      = ttk.Button(self.buttonframe, image=runImg)
+        self.pauseBtn    = ttk.Button(self.buttonframe, image=pauseImg)
+        self.stopBtn     = ttk.Button(self.buttonframe, image=stopImg)
+        self.nextBtn     = ttk.Button(self.buttonframe, image=nextImg)
+        self.loadBtn.image     = loadImg
+        self.saveBtn.image     = saveImg
+        self.settingsBtn.image = settingsImg
+        self.undoBtn.image     = undoImg
+        self.compileBtn.image  = compileImg
+        self.runBtn.image      = runImg
+        self.pauseBtn.image    = pauseImg
+        self.stopBtn.image     = stopImg
+        self.nextBtn.image     = nextImg
         
 
         # Canvas
-        #self.canvas = Canvas(self.leftframe, width=640, height=480, borderwidth=4, relief='ridge')
-        self.canvas = box.CPU_Canvas(self.leftframe, 800, 600, 'white')
+        self.canvas = box.CPU_Canvas(self.leftframe, 950, 600, 'white')
         
         # Pack elements
         self.buttonframe.pack(side=TOP, fill=X, anchor=N, pady=2, padx=10)
@@ -68,7 +86,14 @@ class App(Tk):
         #self.loadBtn.grid(column=2, row=0, padx=5, sticky=N)
         self.loadBtn.pack(side=LEFT, pady=2, anchor=N)
         self.saveBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.settingsBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.undoBtn.pack(side=LEFT, pady=2, anchor=N)
+        ttk.Separator(self.buttonframe, orient=VERTICAL).pack(side=LEFT, fill=Y, anchor=N, pady=2, padx=5)
         self.compileBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.runBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.pauseBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.stopBtn.pack(side=LEFT, pady=2, anchor=N)
+        self.nextBtn.pack(side=LEFT, pady=2, anchor=N)
         
         
         
@@ -124,7 +149,7 @@ class App(Tk):
         pass
         
 
-if __name__ == "__main__":
-    app = App(None)
-    app.title("CPyU - A Python CPU Simulator")
-    app.mainloop()
+#if __name__ == "__main__":
+#    app = App(None)
+#    app.title("CPyU - A Python CPU Simulator")
+#    app.mainloop()
