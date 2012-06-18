@@ -254,6 +254,13 @@ def main():
         app.canvas.pipeThree.update(pipes.pipeThree.stageName)
         app.canvas.pipeFour.update(pipes.pipeFour.stageName)
         app.canvas.pipeFive.update(pipes.pipeFive.stageName)
+
+        '''Pipe Stage Name Update'''
+        app.canvas.get_instr_name(app.canvas.p1_instr, pipes.pipeOne.instr)
+        app.canvas.get_instr_name(app.canvas.p2_instr, pipes.pipeTwo.instr)
+        app.canvas.get_instr_name(app.canvas.p3_instr, pipes.pipeThree.instr)
+        app.canvas.get_instr_name(app.canvas.p4_instr, pipes.pipeFour.instr)
+        app.canvas.get_instr_name(app.canvas.p5_instr, pipes.pipeFive.instr)
         
         '''Register Update'''
         app.canvas.r0.update(hex(mem.r[0])[2:])
@@ -271,6 +278,11 @@ def main():
 
 
     # Update screen when program finished
+    app.canvas.get_instr_name(app.canvas.p1_instr, 0x0)
+    app.canvas.get_instr_name(app.canvas.p2_instr, 0x0)
+    app.canvas.get_instr_name(app.canvas.p3_instr, 0x0)
+    app.canvas.get_instr_name(app.canvas.p4_instr, 0x0)
+    app.canvas.get_instr_name(app.canvas.p5_instr, 0x0)
     app.canvas.r0.update(hex(mem.r[0])[2:])
     app.canvas.r1.update(hex(mem.r[1])[2:])
     app.canvas.r2.update(hex(mem.r[2])[2:])

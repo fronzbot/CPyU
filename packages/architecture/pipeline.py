@@ -5,7 +5,6 @@ hexLookup = {'0':0, '1':1, '2':2, '3':3, '4':4,
 stages = ["IF", "RF", "ALU", "WB"]
 
 
-
 class Controller(object):
     def __init__(self):
         self.pipes = {}
@@ -61,6 +60,7 @@ class Pipeline(object):
         self.instr = self.get_byte(mem.pop())
         if self.instr == 0x0:
             self.stageName = "DONE"
+
         return mem
 
     def reg_fetch(self, mem):

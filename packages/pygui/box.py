@@ -3,6 +3,11 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 
+instructions = {0x0:"cpy", 0x1:"swp", 0x20:"ld", 0x22:"ld.i", 0x23:"st", 0x31:"in", 0x30:"out",
+                0x4:"add", 0x5:"sub", 0x6:"and", 0xB:"ceq", 0x8:"clt", 0xA:"not", 0xD:"mul",
+                0xE:"div", 0x90:"shla", 0x91:"shll", 0x92:"shra", 0x93:"shrl", 0xC0:"jmp",
+                0xC1:"br", 0xCF:"call", 0x70:"ret", 0x71:"reti"}
+
 class CPU_Canvas(Canvas):
     def __init__(self, parent, width, height, background):
         Canvas.__init__(self, parent, width=width, height=height, background=background, borderwidth=4, relief='groove')
@@ -50,7 +55,27 @@ class CPU_Canvas(Canvas):
         self.V_flag = Flag(self, 880, 545)
         self.Z_flag = Flag(self, 880, 575)
 
-
+    def get_instr_name(self, pipe, instr):
+        if instr == 0x0:
+            self.itemconfig(pipe, text="-")
+            return
+        
+        MSB = (instr >> 4)
+        LSB = (instr & 0xF)
+        if MSB in (0x2, 0x3, 0x7, 0x9, 0xC):
+            if MSB == 0xC:
+                if LSB not in (0x0, 0xF):
+                    select = 0x1
+                else:
+                    select = LSB & 0x3
+            elif MSB == 0x7:
+                select = LSB >> 3
+            else:
+                select = LSB & 0x3
+                
+            MSB = (MSB<<4) | select
+            
+        self.itemconfig(pipe, text=instructions[MSB])
 
 
 class Register(object):
@@ -215,7 +240,7 @@ class Visual_Memory(object):
         
 
 
-
+    
 
 
 
