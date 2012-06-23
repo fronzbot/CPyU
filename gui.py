@@ -103,7 +103,7 @@ class App(Tk):
         f.close()
         self.assembler.compiler('asm/tmp.asm')
         if os.name == 'posix':
-            os.sysem('rm asm/tmp.asm')
+            os.system('rm asm/tmp.asm')
         else:
             os.system('del asm/tmp.asm')
         f = open('hex/out.a')
